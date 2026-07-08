@@ -13,7 +13,7 @@ The rest of this page is every tool, every price, and the one command that prove
 
 ---
 
-**Suede** is a pay-per-call music API built on the **x402 payment protocol**. Humans and AI agents generate full-length songs from $0.20, split tracks into stems, verify on-chain music rights for $0.005, and rework old recordings, paying per request in **USDC on Base** with no API key, no account, and no subscription. Suede is live in the **Coinbase x402 Bazaar**, the discovery index agents use to find machine-payable services.
+**[Suede](https://suedeai.ai)** is a pay-per-call music API from Suede Labs, the creator-ownership infrastructure company, built on the **x402 payment protocol**. Humans and AI agents generate full-length songs from $0.20, split tracks into stems, verify on-chain music rights for $0.005, and rework old recordings, paying per request in **USDC on Base** with no API key, no account, and no subscription. Suede is live in the **Coinbase x402 Bazaar**, the discovery index agents use to find machine-payable services.
 
 Prove it in one command:
 
@@ -237,7 +237,7 @@ The authoritative price is the one in the 402 response when you call. This page 
 
 Run the curl at the top of this page. The 402 that comes back is the API contract, price included. Pay it once and you have a mastered WAV; pay $0.20 more and you have a registered, fully owned song.
 
-Read the [developer docs](https://app.suedeai.ai/developers). Browse pay-per-run agents at [Suede Agent Studio](https://agents.suedeai.ai). Check any track's rights record at `/v1/rights/{assetHash}`. Put your own catalog on the record at [ip.suedeai.ai](https://ip.suedeai.ai).
+Read the [developer docs](https://app.suedeai.ai/developers). Browse pay-per-run agents at [Suede Agent Studio](https://agents.suedeai.ai). Check any track's rights record at `/v1/rights/{assetHash}`. Put your own catalog on the record at [ip.suedeai.ai](https://ip.suedeai.ai). The rest of what Suede Labs builds for creator ownership lives at [suedeai.ai](https://suedeai.ai).
 
 <script type="application/ld+json">
 {
@@ -251,8 +251,9 @@ Read the [developer docs](https://app.suedeai.ai/developers). Browse pay-per-run
       "termsOfService": "https://app.suedeai.ai/developers",
       "provider": {
         "@type": "Organization",
-        "name": "Suede",
-        "url": "https://app.suedeai.ai"
+        "name": "Suede Labs",
+        "url": "https://suedeai.ai",
+        "sameAs": ["https://app.suedeai.ai", "https://ip.suedeai.ai", "https://agents.suedeai.ai"]
       }
     },
     {
