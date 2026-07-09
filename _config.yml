@@ -1,6 +1,16 @@
-title: "Suede"
+title: "Suede x402 Music API"
 description: "Pay-per-call music API over x402: generate full songs from $0.20, split stems, verify on-chain rights, rework old recordings. USDC on Base, no API key."
+url: "https://x402.suedeai.ai"
 lang: en
 theme: jekyll-theme-primer
+markdown: kramdown
+
 plugins:
   - jekyll-seo-tag
+  - jekyll-sitemap
+
+# README.md is the GitHub repo landing page; index.md is the built Pages
+# home page. Excluding README.md keeps Jekyll from also emitting it as
+# README.html alongside index.html.
+exclude:
+  - README.md
