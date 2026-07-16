@@ -96,7 +96,7 @@ Endpoints that support the writing stage:
 | `POST /v1/lyrics` | Generated lyric text from a theme or brief | $0.04 |
 | `POST /v1/style-coach` | A few style tags expanded into a prompt-ready generation brief | $0.02 |
 | `POST /agent/image` | Cover art or promo art from a text prompt | $0.05 |
-| `POST /agent/video` | A short-form music-video clip for the track | $1.50 |
+| `POST /agent/video` | A short-form music-video clip for the track | $3.99 |
 
 A full package, song plus cover art plus lyrics you approved first, costs $0.29.
 
@@ -170,7 +170,7 @@ All prices read from the live 402 responses on July 7, 2026. The 402 quote you r
 | Endpoint | Method | Job | Price |
 |---|---|---|---|
 | `/create-music` | POST | Full-length song from a prompt, registered with provenance | $0.20 |
-| `/agent/video` | POST | Short-form music-video clip | $1.50 |
+| `/agent/video` | POST | Short-form music-video clip | $3.99 |
 | `/agent/image` | POST | Cover art or promo still | $0.05 |
 | `/v1/lyrics` | POST | Lyric generation | $0.04 |
 | `/v1/style-coach` | POST | Style tags expanded into a generation brief | $0.02 |
@@ -202,7 +202,7 @@ All prices read from the live 402 responses on July 7, 2026. The 402 quote you r
 ## Frequently asked questions
 
 **What is the Suede x402 Music API?**
-A set of pay-per-call music endpoints from Suede that generate songs, split stems, master audio, rework existing recordings, and verify on-chain music rights. Every endpoint prices itself through the x402 protocol and settles in USDC on Base. Prices run from $0.003 for audio analysis to $1.50 for a music video.
+A set of pay-per-call music endpoints from Suede that generate songs, split stems, master audio, rework existing recordings, and verify on-chain music rights. Every endpoint prices itself through the x402 protocol and settles in USDC on Base. Prices run from $0.003 for audio analysis to $3.99 for a music video.
 
 **Do I need an API key or an account?**
 No. The 402 response is the entire contract. If you can pay the quote in USDC on Base, the endpoint serves you.
@@ -264,7 +264,7 @@ Read the [developer docs](https://app.suedeai.ai/developers). Browse pay-per-run
           "name": "What is the Suede x402 Music API?",
           "acceptedAnswer": {
             "@type": "Answer",
-            "text": "A set of pay-per-call music endpoints from Suede that generate songs, split stems, master audio, rework existing recordings, and verify on-chain music rights. Every endpoint prices itself through the x402 protocol and settles in USDC on Base. Prices run from $0.003 for audio analysis to $1.50 for a music video."
+            "text": "A set of pay-per-call music endpoints from Suede that generate songs, split stems, master audio, rework existing recordings, and verify on-chain music rights. Every endpoint prices itself through the x402 protocol and settles in USDC on Base. Prices run from $0.003 for audio analysis to $3.99 for a music video."
           }
         },
         {
