@@ -13,7 +13,7 @@ The rest of this page is every tool, every price, and the one command that prove
 
 ---
 
-**[Suede](https://suedeai.ai)** is a pay-per-call music API from Suede Labs, the creator-ownership infrastructure company, built on the **x402 payment protocol**. Humans and AI agents generate full-length songs from $0.20, split tracks into stems, verify on-chain music rights for $0.005, and rework old recordings, paying per request in **USDC on Base** with no API key, no account, and no subscription. Suede is live in the **Coinbase x402 Bazaar**, the discovery index agents use to find machine-payable services.
+**[Suede](https://suedeai.ai)** is a pay-per-call music API from Suede Labs, the creator-ownership infrastructure company, built on the **x402 payment protocol**. Humans and AI agents generate full-length songs from $0.50, split tracks into stems, verify on-chain music rights for $0.015, and rework old recordings, paying per request in **USDC on Base** with no API key, no account, and no subscription. Suede is live in the **Coinbase x402 Bazaar**, the discovery index agents use to find machine-payable services.
 
 Prove it in one command:
 
@@ -74,7 +74,7 @@ The pattern across all of it: identity, payment, and ownership each resolve to a
 
 ## How do I generate a full song with one API call?
 
-`POST /create-music` takes a text prompt and returns a complete, full-length song: verses, a chorus, full arrangement, multiple minutes of audio. Not a clip, not a preview. **$0.20 per track**, paid in USDC over x402.
+`POST /create-music` takes a text prompt and returns a complete, full-length song: verses, a chorus, full arrangement, multiple minutes of audio. Not a clip, not a preview. **$0.50 per track**, paid in USDC over x402.
 
 ```bash
 curl -s -X POST https://app.suedeai.ai/create-music \
@@ -95,8 +95,8 @@ Endpoints that support the writing stage:
 |---|---|---|
 | `POST /v1/lyrics` | Generated lyric text from a theme or brief | $0.04 |
 | `POST /v1/style-coach` | A few style tags expanded into a prompt-ready generation brief | $0.02 |
-| `POST /agent/image` | Cover art or promo art from a text prompt | $0.05 |
-| `POST /agent/video` | A short-form music-video clip for the track | $3.99 |
+| `POST /agent/image` | Cover art or promo art from a text prompt | $0.15 |
+| `POST /agent/video` | A short-form music-video clip for the track | $6.99 |
 
 A full package, song plus cover art plus lyrics you approved first, costs $0.29.
 
@@ -106,7 +106,7 @@ Every endpoint in this section takes a recording you already have. Host the file
 
 | Endpoint | What it does | Price |
 |---|---|---|
-| `POST /v1/analyze` | Detects BPM, musical key, mode, energy, danceability, loudness, duration, and a suggested genre | $0.003 |
+| `POST /v1/analyze` | Detects BPM, musical key, mode, energy, danceability, loudness, duration, and a suggested genre | $0.01 |
 | `POST /v1/stems` | Splits the track into a two-stem set: vocal and instrumental | $0.20 |
 | `POST /v1/stems-pro` | Splits the track into a four-stem set for remixing and sync delivery | $0.40 |
 | `POST /v1/acapella` | Isolates the vocal and returns a clean a cappella stem | $0.20 |
@@ -122,7 +122,7 @@ Two sides to this.
 
 **Songs Suede creates are registered from birth.** Every `/create-music` track carries a provenance fingerprint and enters Suede's programmable-IP workflow when it is generated. You do not file anything afterward.
 
-**Any asset can be checked.** `GET /v1/rights/{assetHash}` resolves the Suede Registry attestation on Base for a piece of content by its hash. **$0.005 per lookup.** The response tells you whether the asset is registered, and if it is, the owner wallet, the IP account, the token id, the registration timestamp, and a block explorer link to the on-chain record.
+**Any asset can be checked.** `GET /v1/rights/{assetHash}` resolves the Suede Registry attestation on Base for a piece of content by its hash. **$0.015 per lookup.** The response tells you whether the asset is registered, and if it is, the owner wallet, the IP account, the token id, the registration timestamp, and a block explorer link to the on-chain record.
 
 ```bash
 curl -s https://app.suedeai.ai/v1/rights/0x<content-hash>
@@ -152,7 +152,7 @@ Old demos, tape transfers, live bounces, voice-memo sketches: digitize the recor
 
 A working session on one old recording:
 
-1. `POST /v1/analyze` reads the tempo, key, and energy of the original. ($0.003)
+1. `POST /v1/analyze` reads the tempo, key, and energy of the original. ($0.01)
 2. `POST /v1/stems` separates the vocal from the band. ($0.20)
 3. `POST /v1/cover` remakes it as synthwave, or bluegrass, or whatever direction you want to hear it in. ($0.40)
 4. `POST /v1/continue` picks up from the bridge you never finished and writes past it. ($0.40)
@@ -169,12 +169,12 @@ All prices read from the live 402 responses on July 7, 2026. The 402 quote you r
 
 | Endpoint | Method | Job | Price |
 |---|---|---|---|
-| `/create-music` | POST | Full-length song from a prompt, registered with provenance | $0.20 |
-| `/agent/video` | POST | Short-form music-video clip | $3.99 |
-| `/agent/image` | POST | Cover art or promo still | $0.05 |
+| `/create-music` | POST | Full-length song from a prompt, registered with provenance | $0.50 |
+| `/agent/video` | POST | Short-form music-video clip | $6.99 |
+| `/agent/image` | POST | Cover art or promo still | $0.15 |
 | `/v1/lyrics` | POST | Lyric generation | $0.04 |
 | `/v1/style-coach` | POST | Style tags expanded into a generation brief | $0.02 |
-| `/v1/analyze` | POST | BPM, key, mode, energy, loudness, genre | $0.003 |
+| `/v1/analyze` | POST | BPM, key, mode, energy, loudness, genre | $0.01 |
 | `/v1/stems` | POST | Two-stem split (vocal and instrumental) | $0.20 |
 | `/v1/stems-pro` | POST | Four-stem split | $0.40 |
 | `/v1/acapella` | POST | Vocal isolation, clean a cappella | $0.20 |
@@ -185,7 +185,7 @@ All prices read from the live 402 responses on July 7, 2026. The 402 quote you r
 | `/v1/extend` | POST | Continue a song past its ending | $0.40 |
 | `/v1/continue` | POST | Continue from any timestamp | $0.40 |
 | `/v1/vox` | POST | Voice swap on the lead vocal | $0.40 |
-| `/v1/rights/{assetHash}` | GET | On-chain rights and provenance lookup | $0.005 |
+| `/v1/rights/{assetHash}` | GET | On-chain rights and provenance lookup | $0.015 |
 
 **Payment details:** USDC on Base (asset contract `0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913`), paid to `0xb5a05466712fd5bcdf2883f43cC6B1799428032d`, 300-second payment window per quote. Full developer documentation at [app.suedeai.ai/developers](https://app.suedeai.ai/developers).
 
@@ -202,7 +202,7 @@ All prices read from the live 402 responses on July 7, 2026. The 402 quote you r
 ## Frequently asked questions
 
 **What is the Suede x402 Music API?**
-A set of pay-per-call music endpoints from Suede that generate songs, split stems, master audio, rework existing recordings, and verify on-chain music rights. Every endpoint prices itself through the x402 protocol and settles in USDC on Base. Prices run from $0.003 for audio analysis to $3.99 for a music video.
+A set of pay-per-call music endpoints from Suede that generate songs, split stems, master audio, rework existing recordings, and verify on-chain music rights. Every endpoint prices itself through the x402 protocol and settles in USDC on Base. Prices run from $0.01 for audio analysis to $6.99 for a music video.
 
 **Do I need an API key or an account?**
 No. The 402 response is the entire contract. If you can pay the quote in USDC on Base, the endpoint serves you.
@@ -211,13 +211,13 @@ No. The 402 response is the entire contract. If you can pay the quote in USDC on
 Yes. That is what x402 is for. An agent finds Suede through the Coinbase x402 Bazaar or the discovery document, reads the 402 quote, pays from its own wallet, and receives the asset. Skyfire-tokened agents can pay through the `PAYMENT-SIGNATURE` header instead.
 
 **How much does it cost to generate a song?**
-$0.20 for a complete, full-length track through `POST /create-music`: verses, chorus, full arrangement, delivered with a share URL, a download URL, and a provenance fingerprint.
+$0.50 for a complete, full-length track through `POST /create-music`: verses, chorus, full arrangement, delivered with a share URL, a download URL, and a provenance fingerprint.
 
 **How do I split a song into stems with an API?**
 `POST /v1/stems` returns a two-stem split (vocal and instrumental) for $0.20. `POST /v1/stems-pro` returns a four-stem split for $0.40. Both take a public `audioUrl` and pay per call over x402, no account needed.
 
 **How do I verify who owns a piece of music?**
-`GET /v1/rights/{assetHash}` with the content hash. For $0.005 you get back whether a Suede Registry record exists on Base, the owner wallet, and a block explorer link to verify the record yourself.
+`GET /v1/rights/{assetHash}` with the content hash. For $0.015 you get back whether a Suede Registry record exists on Base, the owner wallet, and a block explorer link to verify the record yourself.
 
 **Who owns a track generated through /create-music?**
 You do. Tracks are generated as fully owned works, registered with a provenance fingerprint inside Suede's programmable-IP and licensing workflow at creation. Licensing specifics live in the [developer docs](https://app.suedeai.ai/developers).
@@ -235,7 +235,7 @@ The authoritative price is the one in the 402 response when you call. This page 
 
 ## Start here
 
-Run the curl at the top of this page. The 402 that comes back is the API contract, price included. Pay it once and you have a mastered WAV; pay $0.20 more and you have a registered, fully owned song.
+Run the curl at the top of this page. The 402 that comes back is the API contract, price included. Pay it once and you have a mastered WAV; pay $0.50 more and you have a registered, fully owned song.
 
 Read the [developer docs](https://app.suedeai.ai/developers). Browse pay-per-run agents at [Suede Agent Studio](https://agents.suedeai.ai). Check any track's rights record at `/v1/rights/{assetHash}`. Put your own catalog on the record at [ip.suedeai.ai](https://ip.suedeai.ai). The rest of what Suede Labs builds for creator ownership lives at [suedeai.ai](https://suedeai.ai).
 
@@ -264,7 +264,7 @@ Read the [developer docs](https://app.suedeai.ai/developers). Browse pay-per-run
           "name": "What is the Suede x402 Music API?",
           "acceptedAnswer": {
             "@type": "Answer",
-            "text": "A set of pay-per-call music endpoints from Suede that generate songs, split stems, master audio, rework existing recordings, and verify on-chain music rights. Every endpoint prices itself through the x402 protocol and settles in USDC on Base. Prices run from $0.003 for audio analysis to $3.99 for a music video."
+            "text": "A set of pay-per-call music endpoints from Suede that generate songs, split stems, master audio, rework existing recordings, and verify on-chain music rights. Every endpoint prices itself through the x402 protocol and settles in USDC on Base. Prices run from $0.01 for audio analysis to $6.99 for a music video."
           }
         },
         {
@@ -272,7 +272,7 @@ Read the [developer docs](https://app.suedeai.ai/developers). Browse pay-per-run
           "name": "How much does it cost to generate a song?",
           "acceptedAnswer": {
             "@type": "Answer",
-            "text": "$0.20 for a complete, full-length track through POST /create-music: verses, chorus, full arrangement, delivered with a share URL, a download URL, and a provenance fingerprint."
+            "text": "$0.50 for a complete, full-length track through POST /create-music: verses, chorus, full arrangement, delivered with a share URL, a download URL, and a provenance fingerprint."
           }
         },
         {
@@ -304,7 +304,7 @@ Read the [developer docs](https://app.suedeai.ai/developers). Browse pay-per-run
           "name": "How do I verify who owns a piece of music?",
           "acceptedAnswer": {
             "@type": "Answer",
-            "text": "GET /v1/rights/{assetHash} with the content hash. For $0.005 you get back whether a Suede Registry record exists on Base, the owner wallet, and a block explorer link to verify the record yourself."
+            "text": "GET /v1/rights/{assetHash} with the content hash. For $0.015 you get back whether a Suede Registry record exists on Base, the owner wallet, and a block explorer link to verify the record yourself."
           }
         },
         {
