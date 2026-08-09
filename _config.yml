@@ -1,5 +1,5 @@
-title: "Suede x402 Music API"
-description: "Pay-per-call music API over x402: generate full songs from $0.20, split stems, verify on-chain rights, rework old recordings. USDC on Base, no API key."
+title: "Suede x402 Media API"
+description: "Three pay-per-call media APIs over x402: music for $0.50, video for $4.99, and image for $0.15. USDC on Base, no API key."
 url: "https://x402.suedeai.ai"
 lang: en
 theme: jekyll-theme-primer
