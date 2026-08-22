@@ -11,7 +11,7 @@ Suede exposes three public, machine-payable media products. Each route quotes it
 
 ## Current public inventory
 
-Verified against the live discovery document and unpaid 402 challenges on August 9, 2026.
+Verified against the live discovery document and unpaid 402 challenges on August 22, 2026.
 
 | Endpoint | Product | Price | Atomic USDC |
 |---|---|---:|---:|
@@ -36,31 +36,70 @@ curl -sS -X POST https://app.suedeai.ai/create-music \
   -d '{"prompt":"slow-burn desert rock, baritone vocal, tremolo guitar"}'
 ```
 
-The server responds with HTTP 402. The body includes x402 v2 terms such as:
+The server responds with HTTP 402. The body carries an `error` naming the missing header, a top-level `resource` descriptor, and one `accepts` entry per accepted network:
 
 ```json
 {
   "x402Version": 2,
+  "error": "PAYMENT-SIGNATURE header is required",
+  "resource": {
+    "url": "https://app.suedeai.ai/create-music",
+    "description": "Generate a song from a prompt with optional custom lyrics and style inputs. Returns JSON describing the generated track when the request succeeds.",
+    "mimeType": "application/json",
+    "serviceName": "Suede AI",
+    "tags": [
+      "music",
+      "song-generation",
+      "text-to-music",
+      "audio",
+      "creative-ai"
+    ]
+  },
   "accepts": [
     {
       "scheme": "exact",
       "network": "base",
+      "maxAmountRequired": "500000",
       "amount": "500000",
       "asset": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
       "payTo": "0x10FF767043A1723E0BB5B9207bC37D3442cC9E4F",
-      "maxTimeoutSeconds": 300
-    },
-    {
-      "scheme": "exact",
-      "network": "eip155:8453",
-      "amount": "500000",
-      "asset": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
-      "payTo": "0x10FF767043A1723E0BB5B9207bC37D3442cC9E4F",
-      "maxTimeoutSeconds": 300
+      "maxTimeoutSeconds": 300,
+      "docs": "https://app.suedeai.ai/developers",
+      "extra": {
+        "name": "USD Coin",
+        "version": "2",
+        "decimals": 6,
+        "priceUsd": "$0.50"
+      },
+      "resource": "https://app.suedeai.ai/create-music",
+      "description": "Generate a song from a prompt with optional custom lyrics and style inputs. Returns JSON describing the generated track when the request succeeds.",
+      "mimeType": "application/json",
+      "outputSchema": {
+        "input": {
+          "type": "http",
+          "method": "POST",
+          "discoverable": true,
+          "bodyType": "json",
+          "body": {
+            "prompt": "<prompt>",
+            "style": "<style>",
+            "custom_mode": false,
+            "lyrics": "<lyrics>",
+            "make_instrumental": false,
+            "vocal_gender": "m",
+            "tags": "<tags>"
+          }
+        },
+        "output": {
+          "shareUrl": "https://app.suedeai.ai/share/example-track"
+        }
+      }
     }
   ]
 }
 ```
+
+Each `accepts` entry carries both `amount` and `maxAmountRequired`, holding the same atomic value. `extra.priceUsd` is a display string; the atomic value is what you sign. The live body also carries a second `accepts` entry for `eip155:8453`, identical to the one above apart from `network`, and an `extensions` object (`skyfire`, `bazaar`) with directory metadata. Both are elided from the sample.
 
 Always sign the quote returned by the route you are calling. Do not hardcode a receiver, price, or network from a directory mirror.
 
@@ -88,11 +127,47 @@ Accepts a text prompt plus optional style and lyric controls. The live quote is 
 
 Generates a short-form video from a prompt. The current live quote is `4990000` atomic USDC, or **$4.99**.
 
+A successful call returns an 8-second 720p clip with native audio. The audio is generated from the scene rather than layered on afterwards, so prompts should carry sound cues — instruments, voices, weather, movement — to get an audible result. A still, silent scene renders near-silent by design.
+
 ### Image generation, $0.15
 
 `POST https://app.suedeai.ai/agent/image`
 
 Generates a still image from a prompt. The live quote is `150000` atomic USDC.
+
+## Machine-readable descriptions
+
+Three documents describe this catalog to agents and directories:
+
+| Document | What it carries |
+|---|---|
+| [`/.well-known/x402.json`](https://app.suedeai.ai/.well-known/x402.json) | Canonical inventory: `provider`, `seller`, `marketplace`, and the three `resources` |
+| [`/.well-known/x402`](https://app.suedeai.ai/.well-known/x402) | Extensionless alias, byte-identical to the `.json` document |
+| [`/openapi.json`](https://app.suedeai.ai/openapi.json) | OpenAPI 3.1 service description, referenced from the discovery document as `seller.openapi` |
+
+The `seller` block is how a caller finds the rest of them. It publishes `origin`, `wellKnown`, `wellKnownJson`, `openapi`, and the `payTo` receiving address.
+
+### The `marketplace` block
+
+The discovery document carries a `marketplace` block for directories that list x402 services:
+
+| Key | Live value |
+|---|---|
+| `providerName` | `Suede Labs` |
+| `providerUrl` | `https://suedeai.ai` |
+| `displayName` | `Suede AI` |
+| `category` | `Creative AI` |
+| `agenticMarketService` | `app.suedeai.ai` |
+| `description` | Agent-paid music, video, and image generation with Base USDC settlement. |
+| `keywords` | `agent commerce`, `music generation`, `video generation`, `image generation`, `x402`, `Base`, `USDC` |
+| `homepage` | `https://suedeai.ai` |
+| `docsUrl` | `https://app.suedeai.ai/developers` |
+| `recommendedHeroPaths` | `/create-music`, `/agent/video`, `/agent/image` |
+| `heroResources` | One entry per recommended hero path |
+
+Each `heroResources` entry repeats `path`, absolute `url`, `method`, `priceUsd`, `providerName`, `providerUrl`, `category`, `title`, `description`, `keywords`, `useCase`, and `docsUrl`, and adds a `marketplacePriority`: `1` for `/create-music`, `2` for `/agent/video`, and `3` for `/agent/image`. A directory surfacing only part of the catalog should follow that order.
+
+This block is listing metadata, not payment terms. Prices appear there as display strings such as `$4.99`; the atomic amount you sign still comes from the live 402 challenge.
 
 ## Scope and compatibility
 
@@ -111,10 +186,10 @@ No. The 402 challenge carries the payment terms for a single request.
 USDC on Base. The current USDC contract is `0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913`. Read the accepted network identifiers from the live challenge.
 
 **Which price is authoritative?**
-The amount in the current 402 challenge. This page mirrors the live values as of August 9, 2026.
+The amount in the current 402 challenge. This page mirrors the live values as of August 22, 2026.
 
 **Where are the machine-readable schemas?**
-Use the [well-known discovery document](https://app.suedeai.ai/.well-known/x402.json) or the [developer documentation](https://app.suedeai.ai/developers).
+Use the [well-known discovery document](https://app.suedeai.ai/.well-known/x402.json), the [OpenAPI 3.1 description](https://app.suedeai.ai/openapi.json), or the [developer documentation](https://app.suedeai.ai/developers). Each 402 challenge also carries an `outputSchema` for the route you called.
 
 <script type="application/ld+json">
 {
@@ -122,7 +197,10 @@ Use the [well-known discovery document](https://app.suedeai.ai/.well-known/x402.
   "@type": "WebAPI",
   "name": "Suede x402 Media API",
   "description": "Three pay-per-call x402 media products: full-length music generation for $0.50, video generation for $4.99, and image generation for $0.15.",
-  "documentation": "https://app.suedeai.ai/developers",
+  "documentation": [
+    "https://app.suedeai.ai/developers",
+    "https://app.suedeai.ai/openapi.json"
+  ],
   "provider": {
     "@type": "Organization",
     "name": "Suede Labs",
@@ -139,6 +217,7 @@ Use the [well-known discovery document](https://app.suedeai.ai/.well-known/x402.
     {
       "@type": "Offer",
       "name": "Video generation",
+      "description": "Text-to-video generation returning an 8-second 720p clip with native audio.",
       "price": "4.99",
       "priceCurrency": "USD",
       "url": "https://app.suedeai.ai/agent/video"

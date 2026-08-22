@@ -4,7 +4,7 @@ Suede exposes three public, machine-payable media products. Each route quotes it
 
 ## Current public inventory
 
-Verified against the live discovery document and unpaid 402 challenges on August 9, 2026.
+Verified against the live discovery document and unpaid 402 challenges on August 22, 2026.
 
 | Endpoint | Product | Price | Atomic USDC |
 |---|---|---:|---:|
@@ -12,12 +12,14 @@ Verified against the live discovery document and unpaid 402 challenges on August
 | `POST /agent/video` | Short-form video generation | **$4.99** | `4990000` |
 | `POST /agent/image` | Still-image generation | **$0.15** | `150000` |
 
+`POST /agent/video` returns an 8-second 720p clip with native audio. The audio is generated from the scene, so prompts should carry sound cues — instruments, voices, weather, movement. A still, silent scene renders near-silent by design.
+
 Canonical discovery:
 
 - [`https://app.suedeai.ai/.well-known/x402.json`](https://app.suedeai.ai/.well-known/x402.json)
 - [`https://app.suedeai.ai/.well-known/x402`](https://app.suedeai.ai/.well-known/x402)
 
-Both aliases publish the same three resources. If a route is not in that document, it is not a current public Suede media offering.
+Both aliases publish the same three resources. If a route is not in that document, it is not a current public Suede media offering. The document also carries a `marketplace` block for directory listings, and its `seller.openapi` points at the OpenAPI 3.1 description at [`https://app.suedeai.ai/openapi.json`](https://app.suedeai.ai/openapi.json).
 
 ## Read a quote without paying
 
@@ -27,7 +29,7 @@ curl -sS -X POST https://app.suedeai.ai/create-music \
   -d '{"prompt":"slow-burn desert rock, baritone vocal, tremolo guitar"}'
 ```
 
-The server responds with x402 v2 terms including the atomic amount, accepted Base network identifier, USDC asset, current receiver, and timeout. This unpaid request does not spend funds.
+The server responds with x402 v2 terms: a top-level `resource` descriptor and one `accepts` entry per accepted network, each carrying the atomic amount as both `amount` and `maxAmountRequired`, the USDC asset, the current receiver, `maxTimeoutSeconds`, a `docs` link, and an `extra` object holding the token name, version, decimals, and a `priceUsd` display string. This unpaid request does not spend funds. The full annotated body is in [`index.md`](index.md).
 
 ## Complete the x402 flow
 
