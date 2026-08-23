@@ -152,10 +152,15 @@ A paid call does not block until the asset is ready. Renders take minutes and x4
 The execution mode is resolved in this order, first match winning:
 
 1. `?async=true` or `?async=false` in the query string. Explicit, and always wins.
-2. A `PAYMENT-SIGNATURE` header is present. Asynchronous.
-3. Otherwise, synchronous.
+2. `asyncMode: true` in the request body. Turns asynchronous execution on; `asyncMode: false` is ignored.
+3. A `PAYMENT-SIGNATURE` header is present. Asynchronous.
+4. Otherwise, synchronous.
 
-The `async` query parameter is the only override the live contract publishes. It is declared on all three paid routes as a string enum of `"true"` and `"false"`; there is no request-body equivalent. Pass `?async=false` to force the blocking call, which is only workable if your client can hold a connection open for the whole render. Pass `?async=true` to queue an unpaid API-key call that would otherwise block.
+Two overrides are published, and they are not symmetric. The `async` query parameter is declared on all three paid routes as a string enum of `"true"` and `"false"`. The request body also takes `asyncMode`, a boolean, published on all three paid routes since 2026-08-22.
+
+**`asyncMode` can only switch asynchronous execution on, never off.** `asyncMode: false` is indistinguishable from omitting the field, so a paid call carrying it still queues. That makes `?async=false` the only way to force the blocking call, which is workable only if your client can hold a connection open for the whole render. `asyncMode: true` is useful mainly to an unpaid API-key caller that would otherwise block — a paid call is already asynchronous without it.
+
+`asyncMode` is declared in [`openapi.json`](https://app.suedeai.ai/openapi.json) only. It is absent from the discovery document entirely, and deliberately so: that document carries concrete example request bodies meant to be copied, and one carrying `asyncMode: false` would read as an off switch it is not.
 
 ### Poll routes
 
