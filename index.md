@@ -117,6 +117,32 @@ Always sign the quote returned by the route you are calling. Do not hardcode a r
 
 Legacy `X-PAYMENT` callers remain supported during migration, but `PAYMENT-SIGNATURE` is the canonical header for new integrations.
 
+## Retry safely with an idempotency key
+
+A render is charged when the job is created, so a client that times out and retries a paid `POST` without protection pays twice for one asset. All three paid routes accept an optional `X-Idempotency-Key` request header to prevent that.
+
+| Property | Live value |
+|---|---|
+| Header | `X-Idempotency-Key` |
+| Accepted on | `POST /create-music`, `POST /agent/video`, `POST /agent/image` |
+| Required | No |
+| Type | String, `maxLength` 200 |
+| Effect | The same key with the same body, inside the cache TTL, returns the original response without re-charging the payer |
+
+```bash
+curl -sS -X POST https://app.suedeai.ai/agent/image \
+  -H "content-type: application/json" \
+  -H "PAYMENT-SIGNATURE: <signed x402 payload>" \
+  -H "X-Idempotency-Key: 6f2a0f4c-98f7-4a1f-9f1f-2f7e0c1b53a9" \
+  -d '{"prompt":"a lone neon sign in fog"}'
+```
+
+The OpenAPI description declares the header identically on all three paid `POST` routes, and on none of the poll routes — a poll is already unpriced and already repeatable.
+
+**The length of the cache window is not published.** The live description names a TTL but gives no duration, so treat the replay window as unspecified rather than assuming a number. Keep the key attached for as long as you intend to retry that purchase.
+
+Generate one key per intended purchase, reuse it across every retry of that purchase, and change it only when you want a second render. Both the key and the body have to match for the replay to apply, so give a changed prompt a new key.
+
 ## Asynchronous execution and polling
 
 A paid call does not block until the asset is ready. Renders take minutes and x402 and Skyfire clients time out at around 30 seconds, so **any request carrying a `PAYMENT-SIGNATURE` header runs asynchronously by default**. This is the normal paid response on all three routes, not an opt-in. The response names a poll URL, and collecting the finished asset from it costs nothing extra.
@@ -269,6 +295,9 @@ No. The render is charged when the job is created. All three poll routes are unp
 
 **Can I get the old blocking behaviour back?**
 Add `?async=false` to the paid request. Your client then has to hold the connection open for the full render, which is why it is not the default.
+
+**How do I retry a paid call without paying twice?**
+Send an `X-Idempotency-Key` header on the paid `POST` and reuse it for every retry of that purchase. The same key with the same body replays the original response instead of charging again. The length of the replay window is not published.
 
 **Which asset and network are used?**
 USDC on Base. The current USDC contract is `0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913`. Read the accepted network identifiers from the live challenge.

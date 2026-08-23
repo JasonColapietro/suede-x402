@@ -41,6 +41,8 @@ The server responds with x402 v2 terms: a top-level `resource` descriptor and on
 
 Legacy `X-PAYMENT` callers remain supported during migration, but `PAYMENT-SIGNATURE` is the canonical header for new integrations.
 
+Paid `POST`s also accept an optional `X-Idempotency-Key` header (string, `maxLength` 200): the same key with the same body replays the original response instead of charging the payer again, which is what stops a timed-out retry from buying a second render. The length of the replay window is not published — see [`index.md`](index.md).
+
 ## Asynchronous by default
 
 Renders take minutes and payment clients time out at around 30 seconds, so **any request carrying a `PAYMENT-SIGNATURE` header runs asynchronously by default** on all three routes. The paid response hands back a poll URL rather than the finished asset. Polling never costs a second payment.
