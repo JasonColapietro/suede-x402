@@ -162,12 +162,12 @@ The `async` query parameter is the only override the live contract publishes. It
 | Paid route | Async status | Poll route | Finished when |
 |---|---|---|---|
 | `POST /create-music` | `202` | `GET /api/songs/{songId}` | `model_version` leaves `pending` |
-| `POST /agent/video` | `200` | `GET /agent/video/{jobId}` | `status` is `completed` and `videoUrl` is set |
-| `POST /agent/image` | `200` | `GET /agent/image/{jobId}` | `status` is `completed` and `imageUrl` is set |
+| `POST /agent/video` | `202` | `GET /agent/video/{jobId}` | `status` is `completed` and `videoUrl` is set |
+| `POST /agent/image` | `202` | `GET /agent/image/{jobId}` | `status` is `completed` and `imageUrl` is set |
 
 All three poll routes are unauthenticated and carry no price. The render was charged when the job was created, so **polling never costs a second payment**.
 
-The two response shapes are not interchangeable. Music returns a `202` and a song row; video and image return a `200` and a job envelope.
+All three answer `202 Accepted` for a queued render, but the two response shapes are not interchangeable: music returns a song row, video and image return a job envelope.
 
 ### Music: 202 and a song row
 
@@ -192,9 +192,9 @@ The two response shapes are not interchangeable. Music returns a `202` and a son
 
 `audio_url` is populated from the moment the row is created, holding the placeholder cover image — a reachable image URL, not audio. Its presence is not completion; `model_version` is the only completion signal. An unknown `songId` returns `404`.
 
-### Video and image: 200 and a job envelope
+### Video and image: 202 and a job envelope
 
-`POST /agent/video` and `POST /agent/image` answer HTTP **`200`, not `202`**. Do not gate your client on a `202` for these two:
+`POST /agent/video` and `POST /agent/image` answer HTTP `202 Accepted` for a queued render, the same as `/create-music`. Until 2026-08-22 these two answered `200` instead, so a client written against that older behavior will read today's `202` as an error. The body is a job envelope:
 
 ```json
 {
@@ -227,7 +227,7 @@ Generates a short-form video from a prompt. The current live quote is `4990000` 
 
 A successful call returns an 8-second 720p clip with native audio. The audio is generated from the scene rather than layered on afterwards, so prompts should carry sound cues — instruments, voices, weather, movement — to get an audible result. A still, silent scene renders near-silent by design.
 
-A paid call answers `200` with a `jobId` and `pollUrl`. Poll `GET /agent/video/{jobId}` until `status` is `completed` and `videoUrl` is set.
+A paid call answers `202` with a `jobId` and `pollUrl`. Poll `GET /agent/video/{jobId}` until `status` is `completed` and `videoUrl` is set.
 
 ### Image generation, $0.15
 
@@ -235,7 +235,7 @@ A paid call answers `200` with a `jobId` and `pollUrl`. Poll `GET /agent/video/{
 
 Generates a still image from a prompt. The live quote is `150000` atomic USDC.
 
-A paid call answers `200` with a `jobId` and `pollUrl`. Poll `GET /agent/image/{jobId}` until `status` is `completed` and `imageUrl` is set.
+A paid call answers `202` with a `jobId` and `pollUrl`. Poll `GET /agent/image/{jobId}` until `status` is `completed` and `imageUrl` is set.
 
 ## Machine-readable descriptions
 

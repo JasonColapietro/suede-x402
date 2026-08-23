@@ -50,12 +50,12 @@ Renders take minutes and payment clients time out at around 30 seconds, so **any
 | Paid route | Async status | Poll route | Finished when |
 |---|---|---|---|
 | `POST /create-music` | `202` | `GET /api/songs/{songId}` | `model_version` leaves `pending` |
-| `POST /agent/video` | `200` | `GET /agent/video/{jobId}` | `status` is `completed` and `videoUrl` is set |
-| `POST /agent/image` | `200` | `GET /agent/image/{jobId}` | `status` is `completed` and `imageUrl` is set |
+| `POST /agent/video` | `202` | `GET /agent/video/{jobId}` | `status` is `completed` and `videoUrl` is set |
+| `POST /agent/image` | `202` | `GET /agent/image/{jobId}` | `status` is `completed` and `imageUrl` is set |
 
 Two traps worth naming:
 
-- **Video and image answer `200`, not `202`.** Only music returns `202`. A client gated on `202` will treat every successful video or image call as an error.
+- **A `200` from a paid call means the asset is already in the body.** All three routes answer `202` for a queued render, so a `2xx` that is not `202` is a finished synchronous result — reachable only by passing `?async=false`. Until 2026-08-22 `/agent/video` and `/agent/image` answered `200` for queued jobs; a client written against that older behavior will mistake today's `202` for an error.
 - **A poll for an unknown `jobId` answers `200` with `status: "failed"`, not `404`** — so it cannot be told apart from a genuinely failed render. Music differs again: an unknown `songId` returns `404`.
 
 Music's poll returns the song row rather than a job envelope, and its `audio_url` holds a placeholder image until the render lands, so `model_version` is the only completion signal.
