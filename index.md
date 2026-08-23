@@ -126,11 +126,10 @@ A paid call does not block until the asset is ready. Renders take minutes and x4
 The execution mode is resolved in this order, first match winning:
 
 1. `?async=true` or `?async=false` in the query string. Explicit, and always wins.
-2. `"asyncMode": true` in the request body. `/agent/video` and `/agent/image` only; `/create-music` has no such field.
-3. A `PAYMENT-SIGNATURE` header is present. Asynchronous.
-4. Otherwise, synchronous.
+2. A `PAYMENT-SIGNATURE` header is present. Asynchronous.
+3. Otherwise, synchronous.
 
-The `async` query parameter is the control published in the live OpenAPI description, and it is the one to use. Pass `?async=false` to force the blocking call, which is only workable if your client can hold a connection open for the whole render. Pass `?async=true` to queue an unpaid API-key call that would otherwise block.
+The `async` query parameter is the only override the live contract publishes. It is declared on all three paid routes as a string enum of `"true"` and `"false"`; there is no request-body equivalent. Pass `?async=false` to force the blocking call, which is only workable if your client can hold a connection open for the whole render. Pass `?async=true` to queue an unpaid API-key call that would otherwise block.
 
 ### Poll routes
 
