@@ -26,6 +26,8 @@ The live discovery document is the canonical public inventory:
 
 Both aliases publish the same three resources. If a route is not in that document, it is not a current public Suede media offering.
 
+All three are asynchronous for paid callers: the paid response hands back a poll URL rather than the finished asset. See [Asynchronous execution and polling](#asynchronous-execution-and-polling).
+
 ## Read a quote without paying
 
 This request asks for the current terms. It does not attach a payment and does not spend funds:
@@ -44,7 +46,7 @@ The server responds with HTTP 402. The body carries an `error` naming the missin
   "error": "PAYMENT-SIGNATURE header is required",
   "resource": {
     "url": "https://app.suedeai.ai/create-music",
-    "description": "Generate a song from a prompt with optional custom lyrics and style inputs. Returns JSON describing the generated track when the request succeeds.",
+    "description": "Generate a song from a prompt with optional custom lyrics and style inputs. Returns JSON describing the generated track when the request succeeds. PAYMENT-SIGNATURE-authenticated requests default to asynchronous execution. Asynchronous responses return 202 Accepted with a songId and pollUrl. Poll GET /api/songs/{songId} without another payment until model_version leaves 'pending' ('failed' is terminal); audio_url is a placeholder image until then and the finished MP3 after.",
     "mimeType": "application/json",
     "serviceName": "Suede AI",
     "tags": [
@@ -72,7 +74,7 @@ The server responds with HTTP 402. The body carries an `error` naming the missin
         "priceUsd": "$0.50"
       },
       "resource": "https://app.suedeai.ai/create-music",
-      "description": "Generate a song from a prompt with optional custom lyrics and style inputs. Returns JSON describing the generated track when the request succeeds.",
+      "description": "Generate a song from a prompt with optional custom lyrics and style inputs. Returns JSON describing the generated track when the request succeeds. PAYMENT-SIGNATURE-authenticated requests default to asynchronous execution. Asynchronous responses return 202 Accepted with a songId and pollUrl. Poll GET /api/songs/{songId} without another payment until model_version leaves 'pending' ('failed' is terminal); audio_url is a placeholder image until then and the finished MP3 after.",
       "mimeType": "application/json",
       "outputSchema": {
         "input": {
@@ -101,6 +103,8 @@ The server responds with HTTP 402. The body carries an `error` naming the missin
 
 Each `accepts` entry carries both `amount` and `maxAmountRequired`, holding the same atomic value. `extra.priceUsd` is a display string; the atomic value is what you sign. The live body also carries a second `accepts` entry for `eip155:8453`, identical to the one above apart from `network`, and an `extensions` object (`skyfire`, `bazaar`) with directory metadata. Both are elided from the sample.
 
+`outputSchema.output` describes the **synchronous** result shape. On `/create-music` it shows `shareUrl`, which is what a blocking call returns; a paid call is asynchronous by default and answers with the `202` envelope described below. On `/agent/video` and `/agent/image` the live `outputSchema.output` already shows the asynchronous `jobId`/`pollUrl` envelope.
+
 Always sign the quote returned by the route you are calling. Do not hardcode a receiver, price, or network from a directory mirror.
 
 ## Complete the x402 flow
@@ -109,9 +113,76 @@ Always sign the quote returned by the route you are calling. Do not hardcode a r
 2. Read the exact terms from the 402 response.
 3. Sign an x402 v2 payment payload for one accepted requirement.
 4. Retry the identical request with `PAYMENT-SIGNATURE`.
-5. Read the result and settlement receipt.
+5. Read the settlement receipt, then collect the asset. A paid call is asynchronous by default, so the body normally carries a `pollUrl` rather than the finished asset.
 
 Legacy `X-PAYMENT` callers remain supported during migration, but `PAYMENT-SIGNATURE` is the canonical header for new integrations.
+
+## Asynchronous execution and polling
+
+A paid call does not block until the asset is ready. Renders take minutes and x402 and Skyfire clients time out at around 30 seconds, so **any request carrying a `PAYMENT-SIGNATURE` header runs asynchronously by default**. This is the normal paid response on all three routes, not an opt-in. The response names a poll URL, and collecting the finished asset from it costs nothing extra.
+
+### Choosing the mode
+
+The execution mode is resolved in this order, first match winning:
+
+1. `?async=true` or `?async=false` in the query string. Explicit, and always wins.
+2. `"asyncMode": true` in the request body. `/agent/video` and `/agent/image` only; `/create-music` has no such field.
+3. A `PAYMENT-SIGNATURE` header is present. Asynchronous.
+4. Otherwise, synchronous.
+
+The `async` query parameter is the control published in the live OpenAPI description, and it is the one to use. Pass `?async=false` to force the blocking call, which is only workable if your client can hold a connection open for the whole render. Pass `?async=true` to queue an unpaid API-key call that would otherwise block.
+
+### Poll routes
+
+| Paid route | Async status | Poll route | Finished when |
+|---|---|---|---|
+| `POST /create-music` | `202` | `GET /api/songs/{songId}` | `model_version` leaves `pending` |
+| `POST /agent/video` | `200` | `GET /agent/video/{jobId}` | `status` is `completed` and `videoUrl` is set |
+| `POST /agent/image` | `200` | `GET /agent/image/{jobId}` | `status` is `completed` and `imageUrl` is set |
+
+All three poll routes are unauthenticated and carry no price. The render was charged when the job was created, so **polling never costs a second payment**.
+
+The two response shapes are not interchangeable. Music returns a `202` and a song row; video and image return a `200` and a job envelope.
+
+### Music: 202 and a song row
+
+`POST /create-music` answers HTTP `202 Accepted`:
+
+```json
+{
+  "status": "processing",
+  "shareUrl": "https://app.suedeai.ai/share/example-track",
+  "songId": "0f5c9e2a-1d33-4c77-9a10-2b8e6d4f1c05",
+  "pollUrl": "https://app.suedeai.ai/api/songs/0f5c9e2a-1d33-4c77-9a10-2b8e6d4f1c05"
+}
+```
+
+`songId` is the last path segment of `pollUrl`. It can be `null` if the job is queued before its placeholder row exists, so read `pollUrl` rather than assembling the URL yourself.
+
+`GET /api/songs/{songId}` returns the song row itself, not a job envelope. Read `model_version`:
+
+- `pending` — queued or rendering. Keep polling.
+- `failed` — terminal. Stop polling.
+- A version label such as `v4.5` — done, and `audio_url` is the finished MP3.
+
+`audio_url` is populated from the moment the row is created, holding the placeholder cover image — a reachable image URL, not audio. Its presence is not completion; `model_version` is the only completion signal. An unknown `songId` returns `404`.
+
+### Video and image: 200 and a job envelope
+
+`POST /agent/video` and `POST /agent/image` answer HTTP **`200`, not `202`**. Do not gate your client on a `202` for these two:
+
+```json
+{
+  "jobId": "video-job-example",
+  "status": "queued",
+  "provider": "suede",
+  "pollUrl": "https://app.suedeai.ai/agent/video/video-job-example"
+}
+```
+
+The poll route returns the same shape, so one schema covers both the blocking and the polled path. `status` is `queued` or `processing` while the render runs, then the terminal `completed` or `failed`. Every field other than `jobId`, `status`, and `provider` is `null` until the render completes, at which point `videoUrl` or `imageUrl` is set. `pollUrl` is `null` on a poll response.
+
+An unknown or expired `jobId` answers `200` with `status: "failed"` rather than `404`, so a poll cannot distinguish a bad identifier from a genuinely failed render. Keep the `pollUrl` you were given.
 
 ## Product details
 
@@ -121,6 +192,8 @@ Legacy `X-PAYMENT` callers remain supported during migration, but `PAYMENT-SIGNA
 
 Accepts a text prompt plus optional style and lyric controls. The live quote is `500000` atomic USDC.
 
+A paid call answers `202` with a `songId` and `pollUrl`. Poll `GET /api/songs/{songId}` until `model_version` leaves `pending`.
+
 ### Video generation, $4.99
 
 `POST https://app.suedeai.ai/agent/video`
@@ -129,11 +202,15 @@ Generates a short-form video from a prompt. The current live quote is `4990000` 
 
 A successful call returns an 8-second 720p clip with native audio. The audio is generated from the scene rather than layered on afterwards, so prompts should carry sound cues — instruments, voices, weather, movement — to get an audible result. A still, silent scene renders near-silent by design.
 
+A paid call answers `200` with a `jobId` and `pollUrl`. Poll `GET /agent/video/{jobId}` until `status` is `completed` and `videoUrl` is set.
+
 ### Image generation, $0.15
 
 `POST https://app.suedeai.ai/agent/image`
 
 Generates a still image from a prompt. The live quote is `150000` atomic USDC.
+
+A paid call answers `200` with a `jobId` and `pollUrl`. Poll `GET /agent/image/{jobId}` until `status` is `completed` and `imageUrl` is set.
 
 ## Machine-readable descriptions
 
@@ -143,9 +220,11 @@ Three documents describe this catalog to agents and directories:
 |---|---|
 | [`/.well-known/x402.json`](https://app.suedeai.ai/.well-known/x402.json) | Canonical inventory: `provider`, `seller`, `marketplace`, and the three `resources` |
 | [`/.well-known/x402`](https://app.suedeai.ai/.well-known/x402) | Extensionless alias, byte-identical to the `.json` document |
-| [`/openapi.json`](https://app.suedeai.ai/openapi.json) | OpenAPI 3.1 service description, referenced from the discovery document as `seller.openapi` |
+| [`/openapi.json`](https://app.suedeai.ai/openapi.json) | OpenAPI 3.1 service description, referenced from the discovery document as `seller.openapi`. Publishes the three paid `POST` routes and the three unpriced `GET` poll routes |
 
 The `seller` block is how a caller finds the rest of them. It publishes `origin`, `wellKnown`, `wellKnownJson`, `openapi`, and the `payTo` receiving address.
+
+The OpenAPI description covers six operations: the three paid `POST` routes, plus `GET /api/songs/{songId}`, `GET /agent/video/{jobId}`, and `GET /agent/image/{jobId}`. Each poll route declares empty `security` — it takes no payment — and names its paid parent in `x-suede-poll-of`. `info.guidance` carries the same asynchronous contract in prose for agents that read only that field.
 
 ### The `marketplace` block
 
@@ -176,11 +255,21 @@ This block is listing metadata, not payment terms. Prices appear there as displa
 - Internal or unlisted routes used by other Suede systems are not public product listings.
 - Directory and documentation mirrors can lag. The live route challenge and well-known manifest win.
 - No paid request is required to verify inventory, amount, asset, network, or receiver.
+- Asynchronous execution is the default for paid callers on all three routes. A client that expects the finished asset in the paid response will misread every successful call.
 
 ## Frequently asked questions
 
 **Do I need an API key or account?**
 No. The 402 challenge carries the payment terms for a single request.
+
+**Why did my paid call return a job id instead of the asset?**
+That is the expected response. Renders take minutes and payment clients time out at around 30 seconds, so a `PAYMENT-SIGNATURE` request queues the job and returns a `pollUrl`. `GET` that URL until the job finishes.
+
+**Does polling cost another payment?**
+No. The render is charged when the job is created. All three poll routes are unpriced and unauthenticated.
+
+**Can I get the old blocking behaviour back?**
+Add `?async=false` to the paid request. Your client then has to hold the connection open for the full render, which is why it is not the default.
 
 **Which asset and network are used?**
 USDC on Base. The current USDC contract is `0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913`. Read the accepted network identifiers from the live challenge.
