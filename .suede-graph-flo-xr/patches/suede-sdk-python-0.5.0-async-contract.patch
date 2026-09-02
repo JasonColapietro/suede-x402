@@ -1,0 +1,1066 @@
+From c65466b2bc6427060f89a76b4665fee4a030cf7f Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Wed, 2 Sep 2026 21:07:34 +0000
+Subject: [PATCH] =?UTF-8?q?fix:=20follow=20the=20async=20x402=20contract?=
+ =?UTF-8?q?=20=E2=80=94=20poll=20202=20renders,=20send=20idempotency=20key?=
+ =?UTF-8?q?s?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+A paid POST on all three routes answers 202 Accepted with a pollUrl; the SDK
+returned that envelope while its docstrings and README promised assetUrl and
+provenance, so `track["assetUrl"]` raised KeyError on every live call.
+
+- create_music / agent_video / agent_image now poll the unpriced pollUrl until
+  the render finishes (model_version leaves pending; status is completed or
+  failed) and return the asset URL. wait=False returns the queued envelope;
+  poll_song / poll_job collect later. RenderTimeout carries the poll URL.
+- Every paid POST sends X-Idempotency-Key, one UUID per intended purchase,
+  reused on the paid retry, so a timed-out retry cannot buy a second render.
+- create_music sends only the published request fields (prompt, style,
+  lyrics, custom_mode, make_instrumental, vocal_gender, tags);
+  duration_seconds is deprecated and no longer sent.
+- select_requirement accepts the `base` network alias and prefers eip155:8453.
+- Tests rebuilt from the published contract (42 passing); README documents
+  the asynchronous flow. Version 0.5.0.
+
+Contract: https://github.com/JasonColapietro/suede-x402
+---
+ README.md                |  35 +++-
+ pyproject.toml           |   2 +-
+ src/suede_ai/__init__.py |  10 +-
+ src/suede_ai/client.py   | 314 +++++++++++++++++++++++++++++++--
+ src/suede_ai/x402.py     |  22 ++-
+ tests/test_client.py     | 369 ++++++++++++++++++++++++++++++++-------
+ 6 files changed, 654 insertions(+), 98 deletions(-)
+
+diff --git a/README.md b/README.md
+index fff3ac8..7ad1eff 100644
+--- a/README.md
++++ b/README.md
+@@ -31,13 +31,35 @@ PRIVATE_KEY = "0x..."
+ with SuedeClient(wallet_private_key=PRIVATE_KEY) as suede:
+     track = suede.create_music(
+         prompt="lo-fi rainy afternoon, vinyl crackle, soft piano",
+-        duration_seconds=30,
+     )
+-    print(track["assetUrl"])  # https://cdn.suedeai.ai/audio/trk_...mp3
+-    print(track["provenance"])  # {"fingerprint": "0x..."} — on-chain attestation
++    print(track["status"])    # "completed" (or "failed")
++    print(track["audioUrl"])  # finished MP3 once completed
+ ```
+ 
+-The first call returns 402 with the x402-v2 challenge. The SDK signs an EIP-3009 `transferWithAuthorization` for USDC on Base, replays with `PAYMENT-SIGNATURE`, and returns the JSON body. You never touch the typed data.
++The first call returns 402 with the x402-v2 challenge. The SDK signs an EIP-3009 `transferWithAuthorization` for USDC on Base and replays with `PAYMENT-SIGNATURE`. The paid call answers `202 Accepted` with a poll URL — renders take minutes — so the SDK then polls that URL (free, no second payment) until the render finishes and hands back the asset. You never touch the typed data or the poll loop.
++
++## Asynchronous renders
++
++Every paid call is asynchronous by default on all three routes. The media methods wait for you:
++
++| Method | Paid response | Polls | Finished when | Result |
++|---|---|---|---|---|
++| `create_music` | `202` + `pollUrl` | `GET /api/songs/{songId}` | `model_version` leaves `pending` | `{"status", "songId", "shareUrl", "pollUrl", "audioUrl", "modelVersion", "song"}` |
++| `agent_video` | `202` + `pollUrl` | `GET /agent/video/{jobId}` | `status` is `completed` | the final job envelope with `videoUrl` |
++| `agent_image` | `202` + `pollUrl` | `GET /agent/image/{jobId}` | `status` is `completed` | the final job envelope with `imageUrl` |
++
++A failed render comes back as `status: "failed"` rather than an exception; the charge already happened when the job was created.
++
++Pass `wait=False` to return as soon as the job is queued and collect later:
++
++```python
++queued = suede.create_music(prompt="slow-burn desert rock", wait=False)
++row = suede.poll_song(queued["pollUrl"])      # or suede.poll_job(url) for video/image
++```
++
++`poll_interval` (default 5s) and `poll_timeout` (default 600s) are constructor and per-call arguments. When the timeout passes, `suede_ai.RenderTimeout` is raised carrying `poll_url`; the purchase stands and you can keep polling.
++
++Every paid `POST` carries an `X-Idempotency-Key` (a fresh UUID per call, or pass `idempotency_key=` to control it). Reuse one key across every retry of the same purchase and the server replays the original response instead of charging again.
+ 
+ ## Current paid resources
+ 
+@@ -49,7 +71,7 @@ In the public discovery manifest (`/.well-known/x402.json`) — deliberately sco
+ | `agent_video`               | `POST /agent/video`            | 4.99         | 8-second 720p video with native audio                  |
+ | `agent_image`               | `POST /agent/image`            | 0.15         | Rights-aware image generation                         |
+ 
+-Prices are enforced server-side and can change. Call `suede.manifest()` before signing a payment. Older `/v1/*` helpers remain in the package for clients using compatible deployments; do not treat them as current public Suede inventory.
++Prices are enforced server-side and can change; the SDK always signs the amount quoted in the live 402 challenge. Call `suede.manifest()` to read the current inventory. Older `/v1/*` helpers remain in the package for clients using compatible deployments; do not treat them as current public Suede inventory.
+ 
+ ## How payment works
+ 
+@@ -57,7 +79,8 @@ Prices are enforced server-side and can change. Call `suede.manifest()` before s
+ 2. Server returns **402 Payment Required** with a base64 `PAYMENT-REQUIRED` header and a JSON-body fallback. Its `accepts` entries declare scheme (`exact`), network (`eip155:8453`), asset (USDC on Base), `payTo`, and atomic `amount`.
+ 3. SDK builds an EIP-3009 `TransferWithAuthorization` typed message and signs it with the configured wallet.
+ 4. SDK base64-encodes the full x402-v2 payment payload and replays the original request with the `PAYMENT-SIGNATURE` header.
+-5. Suede's facilitator settles on-chain; the response body returns asset URL + on-chain provenance.
++5. Suede's facilitator settles on-chain and the route answers `202 Accepted` with a `pollUrl`. The render is charged here.
++6. SDK polls that URL until the render finishes and returns the asset URL. Polling never costs a second payment.
+ 
+ You can inspect the live manifest yourself:
+ 
+diff --git a/pyproject.toml b/pyproject.toml
+index d2b27fb..c6a87f6 100644
+--- a/pyproject.toml
++++ b/pyproject.toml
+@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
+ 
+ [project]
+ name = "suede-ai"
+-version = "0.4.0"
++version = "0.5.0"
+ description = "Python SDK for Suede AI's public x402 music, video, and image resources, settled in USDC on Base. No API keys."
+ readme = "README.md"
+ license = { text = "MIT" }
+diff --git a/src/suede_ai/__init__.py b/src/suede_ai/__init__.py
+index b15fa56..742925d 100644
+--- a/src/suede_ai/__init__.py
++++ b/src/suede_ai/__init__.py
+@@ -11,15 +11,15 @@ Quickstart::
+     from suede_ai import SuedeClient
+ 
+     client = SuedeClient(wallet_private_key="0x...")
+-    result = client.create_music(prompt="lo-fi rainy afternoon")
+-    print(result["assetUrl"])
++    track = client.create_music(prompt="lo-fi rainy afternoon")
++    print(track["status"], track["audioUrl"])  # paid calls are async; the SDK polls for you
+ 
+ The live x402 manifest is at ``https://app.suedeai.ai/.well-known/x402.json``.
+ Public offering reference: https://github.com/JasonColapietro/suede-x402
+ """
+ 
+-from suede_ai.client import SuedeClient
++from suede_ai.client import RenderTimeout, SuedeClient
+ from suede_ai.x402 import PaymentRequired, X402Error
+ 
+-__all__ = ["PaymentRequired", "SuedeClient", "X402Error"]
+-__version__ = "0.4.0"
++__all__ = ["PaymentRequired", "RenderTimeout", "SuedeClient", "X402Error"]
++__version__ = "0.5.0"
+diff --git a/src/suede_ai/client.py b/src/suede_ai/client.py
+index 9e7c952..33e0416 100644
+--- a/src/suede_ai/client.py
++++ b/src/suede_ai/client.py
+@@ -1,7 +1,15 @@
+ """SuedeClient — synchronous Python client for the Suede AI x402 surface.
+ 
+-The client wraps the 402-challenge / sign / retry loop so callers can spend
+-their time writing creative prompts rather than signing EIP-3009 typed data.
++The client wraps the 402-challenge / sign / retry loop and the asynchronous
++render contract published at https://github.com/JasonColapietro/suede-x402:
++
++- A paid ``POST`` answers ``202 Accepted`` with a ``pollUrl``. The render is
++  charged when the job is created and polling never costs a second payment, so
++  the media methods follow ``pollUrl`` until the render finishes unless
++  ``wait=False`` is passed.
++- Every paid ``POST`` carries ``X-Idempotency-Key``, one key per intended
++  purchase, so a timed-out retry replays the original response instead of
++  buying a second render.
+ 
+ The current paid resources exposed by the live manifest at
+ ``https://app.suedeai.ai/.well-known/x402.json`` have typed methods below.
+@@ -16,6 +24,10 @@ import base64
+ import binascii
+ import json as jsonlib
+ import re
++import time
++import uuid
++import warnings
++from collections.abc import Callable
+ from typing import Any
+ 
+ import httpx
+@@ -28,8 +40,32 @@ from suede_ai.x402 import (
+ 
+ DEFAULT_BASE_URL = "https://app.suedeai.ai"
+ DEFAULT_TIMEOUT = httpx.Timeout(60.0, connect=10.0)
++DEFAULT_POLL_INTERVAL = 5.0
++DEFAULT_POLL_TIMEOUT = 600.0
+ MANIFEST_PATH = "/.well-known/x402.json"
++IDEMPOTENCY_HEADER = "X-Idempotency-Key"
+ _HEX_HASH_RE = re.compile(r"^[0-9a-fA-F]{64}$")
++_TERMINAL_JOB_STATUSES = frozenset({"completed", "failed"})
++
++
++class RenderTimeout(TimeoutError):
++    """Raised when a render is still pending after ``poll_timeout`` seconds.
++
++    The purchase already settled when the job was created. Keep polling
++    :attr:`poll_url` (``SuedeClient.poll_song`` or ``SuedeClient.poll_job``)
++    to collect the asset; do not pay again.
++    """
++
++    def __init__(self, poll_url: str, last_status: str | None, timeout: float) -> None:
++        super().__init__(
++            f"render still {last_status or 'pending'} after {timeout:g}s; keep polling {poll_url}"
++        )
++        self.poll_url = poll_url
++        self.last_status = last_status
++
++
++def _new_idempotency_key() -> str:
++    return str(uuid.uuid4())
+ 
+ 
+ class SuedeClient:
+@@ -44,12 +80,16 @@ class SuedeClient:
+         timeout: Per-request timeout. Defaults to 60s read / 10s connect.
+         max_payment_attempts: How many times to replay after a 402. Defaults to 1
+             (one challenge, one paid retry).
++        poll_interval: Seconds between polls of a queued render. Defaults to 5.
++        poll_timeout: Seconds to wait for a render before raising
++            :class:`RenderTimeout`. Defaults to 600. The purchase is never
++            abandoned; the error carries the poll URL.
+ 
+     Example:
+         >>> client = SuedeClient(wallet_private_key="0x...")
+         >>> track = client.create_music(prompt="lo-fi rainy afternoon")
+-        >>> track["assetUrl"]
+-        'https://cdn.suedeai.ai/audio/trk_....mp3'
++        >>> track["status"], track["audioUrl"]
++        ('completed', 'https://.../song.mp3')
+     """
+ 
+     def __init__(
+@@ -60,6 +100,9 @@ class SuedeClient:
+         http_client: httpx.Client | None = None,
+         timeout: httpx.Timeout | float | None = None,
+         max_payment_attempts: int = 1,
++        poll_interval: float = DEFAULT_POLL_INTERVAL,
++        poll_timeout: float = DEFAULT_POLL_TIMEOUT,
++        sleep: Callable[[float], None] = time.sleep,
+     ) -> None:
+         if not wallet_private_key:
+             raise ValueError("wallet_private_key is required")
+@@ -69,9 +112,12 @@ class SuedeClient:
+         self._http = http_client or httpx.Client(
+             base_url=self._base_url,
+             timeout=timeout or DEFAULT_TIMEOUT,
+-            headers={"User-Agent": "suede-ai-python/0.3.1"},
++            headers={"User-Agent": "suede-ai-python/0.5.0"},
+         )
+         self._max_payment_attempts = max_payment_attempts
++        self._poll_interval = poll_interval
++        self._poll_timeout = poll_timeout
++        self._sleep = sleep
+ 
+     # ------------------------------------------------------------------ lifecycle
+     def close(self) -> None:
+@@ -98,9 +144,19 @@ class SuedeClient:
+         *,
+         json: dict[str, Any] | None = None,
+         params: dict[str, Any] | None = None,
++        idempotency_key: str | None = None,
+     ) -> dict[str, Any]:
+         """Make a paid request: on 402, sign EIP-3009 and replay with PAYMENT-SIGNATURE.
+ 
++        The body is returned as-is. For a paid media call that is normally the
++        ``202`` job envelope (``pollUrl``), not the finished asset; the typed
++        media methods handle the polling.
++
++        Args:
++            idempotency_key: Sent as ``X-Idempotency-Key`` on the challenge and
++                the paid replay. Reuse one key across every retry of the same
++                purchase so a timeout cannot buy a second render.
++
+         Raises:
+             PaymentRequired: server returned 402 but no acceptable scheme.
+             httpx.HTTPStatusError: any non-2xx response after the paid retry.
+@@ -109,9 +165,13 @@ class SuedeClient:
+         last_response: httpx.Response | None = None
+         payment_header: str | None = None
+         while attempt <= self._max_payment_attempts:
+-            req_headers = {"PAYMENT-SIGNATURE": payment_header} if payment_header else None
++            req_headers: dict[str, str] = {}
++            if idempotency_key:
++                req_headers[IDEMPOTENCY_HEADER] = idempotency_key
++            if payment_header:
++                req_headers["PAYMENT-SIGNATURE"] = payment_header
+             response = self._http.request(
+-                method, path, json=json, params=params, headers=req_headers
++                method, path, json=json, params=params, headers=req_headers or None
+             )
+             last_response = response
+             if response.status_code != 402:
+@@ -138,30 +198,195 @@ class SuedeClient:
+             f"final status {last_response.status_code}"
+         )
+ 
++    # ------------------------------------------------------------------ polling
++    def poll_song(
++        self,
++        poll_url: str,
++        *,
++        poll_interval: float | None = None,
++        poll_timeout: float | None = None,
++    ) -> dict[str, Any]:
++        """``GET /api/songs/{songId}`` until ``model_version`` leaves ``pending``.
++
++        Free and unauthenticated. Returns the song row; ``model_version`` is
++        ``failed`` for a terminal failure, otherwise a version label and
++        ``audio_url`` is the finished MP3. An unknown ``songId`` raises
++        :class:`httpx.HTTPStatusError` (404).
++        """
++        return self._poll(
++            poll_url,
++            done=lambda row: (
++                isinstance(row.get("model_version"), str) and row["model_version"] != "pending"
++            ),
++            status_of=lambda row: row.get("model_version"),
++            poll_interval=poll_interval,
++            poll_timeout=poll_timeout,
++        )
++
++    def poll_job(
++        self,
++        poll_url: str,
++        *,
++        poll_interval: float | None = None,
++        poll_timeout: float | None = None,
++    ) -> dict[str, Any]:
++        """Poll a video or image job until ``status`` is ``completed`` or ``failed``.
++
++        Free and unauthenticated. Note that an unknown ``jobId`` answers
++        ``200`` with ``status: "failed"`` rather than 404, so keep the exact
++        ``pollUrl`` the paid response handed back.
++        """
++        return self._poll(
++            poll_url,
++            done=lambda job: job.get("status") in _TERMINAL_JOB_STATUSES,
++            status_of=lambda job: job.get("status"),
++            poll_interval=poll_interval,
++            poll_timeout=poll_timeout,
++        )
++
++    def _poll(
++        self,
++        url: str,
++        *,
++        done: Callable[[dict[str, Any]], bool],
++        status_of: Callable[[dict[str, Any]], Any],
++        poll_interval: float | None,
++        poll_timeout: float | None,
++    ) -> dict[str, Any]:
++        interval = self._poll_interval if poll_interval is None else poll_interval
++        timeout = self._poll_timeout if poll_timeout is None else poll_timeout
++        started = time.monotonic()
++        while True:
++            response = self._http.get(url)
++            response.raise_for_status()
++            body = _safe_json(response)
++            if done(body):
++                return body
++            if time.monotonic() - started + interval >= timeout:
++                status = status_of(body)
++                raise RenderTimeout(url, status if isinstance(status, str) else None, timeout)
++            self._sleep(interval)
++
+     # ------------------------------------------------------------------ endpoints
+     # Music generation -----------------------------------------------------
+     def create_music(
+         self,
+         *,
+         prompt: str,
+-        duration_seconds: int = 30,
+         style: str | None = None,
++        lyrics: str | None = None,
++        custom_mode: bool | None = None,
++        make_instrumental: bool | None = None,
++        vocal_gender: str | None = None,
++        tags: str | None = None,
++        wait: bool = True,
++        poll_interval: float | None = None,
++        poll_timeout: float | None = None,
++        idempotency_key: str | None = None,
++        duration_seconds: int | None = None,
+     ) -> dict[str, Any]:
+-        """``POST /create-music`` — rights-aware music generation (0.50 USDC).
++        """``POST /create-music`` — full-length song generation (0.50 USDC).
++
++        The paid call answers ``202`` with a ``pollUrl``; by default this method
++        polls ``GET /api/songs/{songId}`` until ``model_version`` leaves
++        ``pending`` and returns::
+ 
+-        Returns ``{trackId, shareUrl, assetUrl, provenance: {fingerprint}}``.
++            {
++              "status": "completed" | "failed" | "processing",
++              "songId": "...", "shareUrl": "...", "pollUrl": "...",
++              "audioUrl": "https://.../song.mp3" | None,   # set when completed
++              "modelVersion": "v4.5" | "failed" | None,
++              "song": <the song row> | None,
++            }
++
++        With ``wait=False`` the method returns immediately with
++        ``status="processing"``; collect later with :meth:`poll_song`.
++
++        ``duration_seconds`` is not part of the published request schema and is
++        no longer sent; passing it emits a :class:`DeprecationWarning`.
+         """
+-        body: dict[str, Any] = {"prompt": prompt, "durationSeconds": duration_seconds}
+-        if style:
+-            body["style"] = style
+-        return self.request("POST", "/create-music", json=body)
++        if duration_seconds is not None:
++            warnings.warn(
++                "duration_seconds is not part of the published /create-music request "
++                "schema and is no longer sent",
++                DeprecationWarning,
++                stacklevel=2,
++            )
++        body: dict[str, Any] = {"prompt": prompt}
++        for key, value in (
++            ("style", style),
++            ("lyrics", lyrics),
++            ("custom_mode", custom_mode),
++            ("make_instrumental", make_instrumental),
++            ("vocal_gender", vocal_gender),
++            ("tags", tags),
++        ):
++            if value is not None:
++                body[key] = value
++        result = self.request(
++            "POST",
++            "/create-music",
++            json=body,
++            idempotency_key=idempotency_key or _new_idempotency_key(),
++        )
++        return self._music_result(
++            result, wait=wait, poll_interval=poll_interval, poll_timeout=poll_timeout
++        )
++
++    def _music_result(
++        self,
++        result: dict[str, Any],
++        *,
++        wait: bool,
++        poll_interval: float | None,
++        poll_timeout: float | None,
++    ) -> dict[str, Any]:
++        poll_url = result.get("pollUrl")
++        poll_url = poll_url if isinstance(poll_url, str) and poll_url else None
++        song_id = result.get("songId")
++        if not isinstance(song_id, str) or not song_id:
++            song_id = poll_url.rstrip("/").rsplit("/", 1)[-1] if poll_url else None
++        summary: dict[str, Any] = {
++            "status": "processing",
++            "songId": song_id,
++            "shareUrl": result.get("shareUrl"),
++            "pollUrl": poll_url,
++            "audioUrl": None,
++            "modelVersion": None,
++            "song": None,
++        }
++        if poll_url is None:
++            # Blocking result (?async=false or an unpaid caller): the body is the track.
++            audio_url = result.get("audio_url") or result.get("assetUrl")
++            return {
++                **summary,
++                "status": "completed",
++                "audioUrl": audio_url if isinstance(audio_url, str) else None,
++                "modelVersion": result.get("model_version"),
++                "song": result,
++            }
++        if not wait:
++            return summary
++        row = self.poll_song(poll_url, poll_interval=poll_interval, poll_timeout=poll_timeout)
++        model_version = row.get("model_version")
++        failed = model_version == "failed"
++        audio_url = None if failed else row.get("audio_url")
++        return {
++            **summary,
++            "status": "failed" if failed else "completed",
++            "shareUrl": summary["shareUrl"] or row.get("share_url"),
++            "audioUrl": audio_url if isinstance(audio_url, str) else None,
++            "modelVersion": model_version,
++            "song": row,
++        }
+ 
+     def agent_generate(
+         self,
+         *,
+         prompt: str,
+-        duration_seconds: int = 30,
++        duration_seconds: int | None = None,
+         style: str | None = None,
++        **kwargs: Any,
+     ) -> dict[str, Any]:
+         """Deprecated compatibility wrapper for ``create_music`` (0.50 USDC).
+ 
+@@ -172,6 +397,7 @@ class SuedeClient:
+             prompt=prompt,
+             duration_seconds=duration_seconds,
+             style=style,
++            **kwargs,
+         )
+ 
+     def agent_video(
+@@ -181,18 +407,35 @@ class SuedeClient:
+         duration_seconds: int = 8,
+         aspect_ratio: str | None = None,
+         resolution: str | None = None,
++        wait: bool = True,
++        poll_interval: float | None = None,
++        poll_timeout: float | None = None,
++        idempotency_key: str | None = None,
+     ) -> dict[str, Any]:
+         """``POST /agent/video`` — 8-second 720p video with native audio (4.99 USDC).
+ 
+         ``aspect_ratio`` one of ``"16:9" | "9:16" | "1:1"``;
+         ``resolution`` one of ``"720p" | "1024p"``.
++
++        The paid call answers ``202`` with a job envelope. By default this
++        method polls ``GET /agent/video/{jobId}`` until ``status`` is
++        ``completed`` (``videoUrl`` set) or ``failed`` and returns that final
++        envelope. With ``wait=False`` the queued envelope is returned as-is.
+         """
+         body: dict[str, Any] = {"prompt": prompt, "durationSeconds": duration_seconds}
+         if aspect_ratio:
+             body["aspectRatio"] = aspect_ratio
+         if resolution:
+             body["resolution"] = resolution
+-        return self.request("POST", "/agent/video", json=body)
++        result = self.request(
++            "POST",
++            "/agent/video",
++            json=body,
++            idempotency_key=idempotency_key or _new_idempotency_key(),
++        )
++        return self._job_result(
++            result, wait=wait, poll_interval=poll_interval, poll_timeout=poll_timeout
++        )
+ 
+     def agent_image(
+         self,
+@@ -200,18 +443,53 @@ class SuedeClient:
+         prompt: str,
+         aspect_ratio: str | None = None,
+         output_format: str | None = None,
++        wait: bool = True,
++        poll_interval: float | None = None,
++        poll_timeout: float | None = None,
++        idempotency_key: str | None = None,
+     ) -> dict[str, Any]:
+-        """``POST /agent/image`` — rights-aware image generation (0.15 USDC).
++        """``POST /agent/image`` — still-image generation (0.15 USDC).
+ 
+         ``aspect_ratio`` examples include ``"1:1"``, ``"9:16"``, and ``"16:9"``;
+         ``output_format`` one of ``"png" | "jpeg"``.
++
++        The paid call answers ``202`` with a job envelope. By default this
++        method polls ``GET /agent/image/{jobId}`` until ``status`` is
++        ``completed`` (``imageUrl`` set) or ``failed`` and returns that final
++        envelope. With ``wait=False`` the queued envelope is returned as-is.
+         """
+         body: dict[str, Any] = {"prompt": prompt}
+         if aspect_ratio:
+             body["aspectRatio"] = aspect_ratio
+         if output_format:
+             body["outputFormat"] = output_format
+-        return self.request("POST", "/agent/image", json=body)
++        result = self.request(
++            "POST",
++            "/agent/image",
++            json=body,
++            idempotency_key=idempotency_key or _new_idempotency_key(),
++        )
++        return self._job_result(
++            result, wait=wait, poll_interval=poll_interval, poll_timeout=poll_timeout
++        )
++
++    def _job_result(
++        self,
++        result: dict[str, Any],
++        *,
++        wait: bool,
++        poll_interval: float | None,
++        poll_timeout: float | None,
++    ) -> dict[str, Any]:
++        poll_url = result.get("pollUrl")
++        if (
++            not wait
++            or not isinstance(poll_url, str)
++            or not poll_url
++            or result.get("status") in _TERMINAL_JOB_STATUSES
++        ):
++            return result
++        return self.poll_job(poll_url, poll_interval=poll_interval, poll_timeout=poll_timeout)
+ 
+     # Music tools ----------------------------------------------------------
+     def extend(
+diff --git a/src/suede_ai/x402.py b/src/suede_ai/x402.py
+index 050a38d..f32f3c5 100644
+--- a/src/suede_ai/x402.py
++++ b/src/suede_ai/x402.py
+@@ -84,13 +84,28 @@ class PaymentRequirement:
+         return accepted
+ 
+ 
++_NETWORK_ALIASES: dict[str, tuple[str, ...]] = {
++    BASE_NETWORK_ID: ("base", "base-mainnet"),
++    "eip155:84532": ("base-sepolia",),
++}
++
++
++def _network_matches(advertised: Any, preferred: str) -> bool:
++    return advertised == preferred or advertised in _NETWORK_ALIASES.get(preferred, ())
++
++
+ def select_requirement(
+     accepts: list[dict[str, Any]],
+     *,
+     preferred_asset: str = USDC_BASE_ADDRESS,
+     preferred_network: str = BASE_NETWORK_ID,
+ ) -> PaymentRequirement:
+-    """Pick a usable accept entry, requiring USDC on Base + exact scheme."""
++    """Pick a usable accept entry, requiring USDC on Base + exact scheme.
++
++    The live challenge advertises the same requirement twice, once as the
++    CAIP-2 id ``eip155:8453`` and once as the alias ``base``. The CAIP-2 entry
++    is preferred when present; the alias is accepted when it is the only one.
++    """
+     if not accepts:
+         raise PaymentRequired("Server returned 402 with no acceptable schemes.")
+ 
+@@ -98,13 +113,14 @@ def select_requirement(
+         entry
+         for entry in accepts
+         if entry.get("scheme") == "exact"
+-        and entry.get("asset", "").lower() == preferred_asset.lower()
+-        and entry.get("network") == preferred_network
++        and str(entry.get("asset", "")).lower() == preferred_asset.lower()
++        and _network_matches(entry.get("network"), preferred_network)
+     ]
+     if not matching:
+         raise PaymentRequired(
+             "No 'exact' scheme offering USDC on Base was found in the server's accepts array."
+         )
++    matching.sort(key=lambda entry: entry.get("network") != preferred_network)
+     return PaymentRequirement.from_dict(matching[0])
+ 
+ 
+diff --git a/tests/test_client.py b/tests/test_client.py
+index 2c249a4..67b96b4 100644
+--- a/tests/test_client.py
++++ b/tests/test_client.py
+@@ -238,90 +238,335 @@ def test_sign_payment_produces_full_v2_payment_payload() -> None:
+     assert auth["nonce"].startswith("0x") and len(auth["nonce"]) == 66
+ 
+ 
++# --------------------------------------------------------------------------- network aliases
++def test_select_requirement_prefers_caip2_when_both_spellings_are_advertised() -> None:
++    accepts = [_accept_entry(network="base"), _accept_entry(network=BASE_NETWORK_ID)]
++    assert select_requirement(accepts).network == BASE_NETWORK_ID
++
++
++def test_select_requirement_accepts_base_alias_when_caip2_is_absent() -> None:
++    chosen = select_requirement([_accept_entry(network="base")])
++    assert chosen.network == "base"
++    assert chosen.asset.lower() == USDC_BASE_ADDRESS.lower()
++
++
++# --------------------------------------------------------------------------- async contract fixtures
++MUSIC_RESOURCE = {
++    "url": "https://app.suedeai.ai/create-music",
++    "description": "Generate a song from a prompt.",
++    "mimeType": "application/json",
++    "serviceName": "Suede AI",
++}
++SONG_ID = "0f5c9e2a-1d33-4c77-9a10-2b8e6d4f1c05"
++SONG_POLL_URL = f"https://app.suedeai.ai/api/songs/{SONG_ID}"
++SHARE_URL = "https://app.suedeai.ai/share/example-track"
++PLACEHOLDER = "https://app.suedeai.ai/placeholder.png"
++FINISHED_MP3 = "https://cdn.suedeai.ai/audio/song.mp3"
++
++
++def _music_challenge() -> dict:
++    return {
++        "x402Version": 2,
++        "error": "PAYMENT-SIGNATURE header is required",
++        "resource": MUSIC_RESOURCE,
++        "accepts": [_accept_entry(network="base"), _accept_entry(network=BASE_NETWORK_ID)],
++    }
++
++
++def _music_envelope() -> dict:
++    return {
++        "status": "processing",
++        "shareUrl": SHARE_URL,
++        "songId": SONG_ID,
++        "pollUrl": SONG_POLL_URL,
++    }
++
++
++def _song_row(model_version: str, audio_url: str) -> dict:
++    return {"id": SONG_ID, "model_version": model_version, "audio_url": audio_url}
++
++
++def _client(handler, **kwargs) -> SuedeClient:
++    transport = httpx.MockTransport(handler)
++    http = httpx.Client(transport=transport, base_url="https://app.suedeai.ai")
++    kwargs.setdefault("poll_interval", 0)
++    kwargs.setdefault("sleep", lambda _seconds: None)
++    return SuedeClient(wallet_private_key=TEST_PRIVATE_KEY, http_client=http, **kwargs)
++
++
+ # --------------------------------------------------------------------------- 402 retry loop
+-def test_request_prefers_payment_required_header_and_returns_queued_media() -> None:
+-    call_count = {"n": 0}
++def test_request_prefers_payment_required_header_and_polls_video_to_completion() -> None:
++    calls: list[httpx.Request] = []
+     challenge = _live_shaped_video_challenge()
+     challenge_header = base64.b64encode(
+         json.dumps(challenge, separators=(",", ":")).encode()
+     ).decode()
++    poll_url = "https://app.suedeai.ai/agent/video/video-job-001"
+ 
+     def handler(request: httpx.Request) -> httpx.Response:
+-        call_count["n"] += 1
+-        if call_count["n"] == 1:
++        calls.append(request)
++        n = len(calls)
++        if n == 1:
++            assert request.method == "POST"
+             assert "PAYMENT-SIGNATURE" not in request.headers
++            assert request.headers["X-Idempotency-Key"]
+             return httpx.Response(
+                 402,
+                 headers={"PAYMENT-REQUIRED": challenge_header},
+                 # Deliberately unusable body: header parsing must win.
+-                json={"x402Version": 2, "accepts": [_accept_entry(network="base")]},
++                json={"x402Version": 2, "accepts": []},
++            )
++        if n == 2:
++            assert request.method == "POST"
++            assert "X-PAYMENT" not in request.headers
++            assert request.headers["X-Idempotency-Key"] == calls[0].headers["X-Idempotency-Key"]
++            decoded = json.loads(base64.b64decode(request.headers["PAYMENT-SIGNATURE"]))
++            assert decoded["x402Version"] == 2
++            assert decoded["accepted"]["network"] == BASE_NETWORK_ID
++            assert decoded["accepted"]["amount"] == "4990000"
++            assert decoded["resource"] == VIDEO_RESOURCE
++            assert decoded["extensions"] == VIDEO_EXTENSIONS
++            return httpx.Response(
++                202,
++                json={
++                    "jobId": "video-job-001",
++                    "status": "queued",
++                    "provider": "suede",
++                    "pollUrl": poll_url,
++                },
++            )
++        # Polls: free GETs against the exact pollUrl, no payment, no idempotency key.
++        assert request.method == "GET"
++        assert str(request.url) == poll_url
++        assert "PAYMENT-SIGNATURE" not in request.headers
++        assert "X-Idempotency-Key" not in request.headers
++        if n == 3:
++            return httpx.Response(
++                200,
++                json={
++                    "jobId": "video-job-001",
++                    "status": "processing",
++                    "provider": "suede",
++                    "pollUrl": None,
++                    "videoUrl": None,
++                },
+             )
+-        assert "PAYMENT-SIGNATURE" in request.headers
+-        assert "X-PAYMENT" not in request.headers
+-        header = request.headers["PAYMENT-SIGNATURE"]
+-        decoded = json.loads(base64.b64decode(header))
+-        assert decoded["x402Version"] == 2
+-        assert decoded["accepted"]["network"] == BASE_NETWORK_ID
+-        assert decoded["accepted"]["amount"] == "4990000"
+-        assert decoded["resource"] == VIDEO_RESOURCE
+-        assert decoded["extensions"] == VIDEO_EXTENSIONS
+         return httpx.Response(
+-            202,
++            200,
+             json={
+                 "jobId": "video-job-001",
+-                "status": "queued",
++                "status": "completed",
+                 "provider": "suede",
+-                "pollUrl": "https://app.suedeai.ai/agent/video/video-job-001",
++                "pollUrl": None,
++                "videoUrl": "https://cdn.suedeai.ai/video/clip.mp4",
+             },
+         )
+ 
+-    transport = httpx.MockTransport(handler)
+-    http = httpx.Client(transport=transport, base_url="https://app.suedeai.ai")
+-    client = SuedeClient(wallet_private_key=TEST_PRIVATE_KEY, http_client=http)
++    result = _client(handler).agent_video(prompt="A rain-soaked neon street, tyres hissing")
++
++    assert result["status"] == "completed"
++    assert result["videoUrl"] == "https://cdn.suedeai.ai/video/clip.mp4"
++    assert result["jobId"] == "video-job-001"
++    assert len(calls) == 4
++    assert json.loads(calls[0].content) == {
++        "prompt": "A rain-soaked neon street, tyres hissing",
++        "durationSeconds": 8,
++    }
++
++
++def test_create_music_falls_back_to_json_challenge_and_polls_song_row() -> None:
++    calls: list[httpx.Request] = []
++
++    def handler(request: httpx.Request) -> httpx.Response:
++        calls.append(request)
++        n = len(calls)
++        if n == 1:
++            return httpx.Response(402, json=_music_challenge())
++        if n == 2:
++            decoded = json.loads(base64.b64decode(request.headers["PAYMENT-SIGNATURE"]))
++            assert decoded["accepted"]["network"] == BASE_NETWORK_ID
++            assert decoded["accepted"]["amount"] == "500000"
++            return httpx.Response(202, json=_music_envelope())
++        assert request.method == "GET"
++        assert str(request.url) == SONG_POLL_URL
++        if n == 3:
++            # audio_url holds the placeholder cover image until the render lands.
++            return httpx.Response(200, json=_song_row("pending", PLACEHOLDER))
++        return httpx.Response(200, json=_song_row("v4.5", FINISHED_MP3))
++
++    result = _client(handler).create_music(prompt="body fallback")
+ 
+-    result = client.agent_video(prompt="A rain-soaked neon street")
+     assert result == {
+-        "jobId": "video-job-001",
+-        "status": "queued",
+-        "provider": "suede",
+-        "pollUrl": "https://app.suedeai.ai/agent/video/video-job-001",
++        "status": "completed",
++        "songId": SONG_ID,
++        "shareUrl": SHARE_URL,
++        "pollUrl": SONG_POLL_URL,
++        "audioUrl": FINISHED_MP3,
++        "modelVersion": "v4.5",
++        "song": _song_row("v4.5", FINISHED_MP3),
+     }
+-    assert call_count["n"] == 2
++    assert len(calls) == 4
+ 
+ 
+-def test_request_falls_back_to_json_challenge_when_header_is_missing() -> None:
+-    call_count = {"n": 0}
+-    challenge = _live_shaped_video_challenge()
++def test_create_music_sends_only_documented_fields_and_reads_blocking_result() -> None:
++    seen: dict = {}
+ 
+     def handler(request: httpx.Request) -> httpx.Response:
+-        call_count["n"] += 1
+-        if call_count["n"] == 1:
+-            return httpx.Response(402, json=challenge)
+-        decoded = json.loads(base64.b64decode(request.headers["PAYMENT-SIGNATURE"]))
+-        assert decoded["accepted"]["network"] == BASE_NETWORK_ID
+-        return httpx.Response(200, json={"trackId": "trk_body_fallback"})
++        seen["body"] = json.loads(request.content)
++        seen["path"] = request.url.path
++        return httpx.Response(200, json={"shareUrl": SHARE_URL})
++
++    with pytest.warns(DeprecationWarning, match="duration_seconds"):
++        result = _client(handler).create_music(
++            prompt="desert rock",
++            style="baritone vocal",
++            lyrics="wind and distant thunder",
++            custom_mode=True,
++            make_instrumental=False,
++            vocal_gender="m",
++            tags="rock",
++            duration_seconds=30,
++        )
++
++    assert seen["path"] == "/create-music"
++    assert seen["body"] == {
++        "prompt": "desert rock",
++        "style": "baritone vocal",
++        "lyrics": "wind and distant thunder",
++        "custom_mode": True,
++        "make_instrumental": False,
++        "vocal_gender": "m",
++        "tags": "rock",
++    }
++    assert result["status"] == "completed"
++    assert result["shareUrl"] == SHARE_URL
++    assert result["audioUrl"] is None
++    assert result["song"] == {"shareUrl": SHARE_URL}
+ 
+-    transport = httpx.MockTransport(handler)
+-    http = httpx.Client(transport=transport, base_url="https://app.suedeai.ai")
+-    client = SuedeClient(wallet_private_key=TEST_PRIVATE_KEY, http_client=http)
+ 
+-    result = client.create_music(prompt="body fallback")
++def test_create_music_wait_false_returns_processing_envelope() -> None:
++    calls: list[httpx.Request] = []
+ 
+-    assert result == {"trackId": "trk_body_fallback"}
+-    assert call_count["n"] == 2
++    def handler(request: httpx.Request) -> httpx.Response:
++        calls.append(request)
++        if len(calls) == 1:
++            return httpx.Response(402, json=_music_challenge())
++        return httpx.Response(202, json=_music_envelope())
++
++    result = _client(handler).create_music(prompt="queue only", wait=False)
++
++    assert result["status"] == "processing"
++    assert result["songId"] == SONG_ID
++    assert result["pollUrl"] == SONG_POLL_URL
++    assert result["audioUrl"] is None
++    assert len(calls) == 2
++
++
++def test_failed_render_is_terminal_not_an_exception() -> None:
++    calls: list[httpx.Request] = []
++
++    def handler(request: httpx.Request) -> httpx.Response:
++        calls.append(request)
++        n = len(calls)
++        if n == 1:
++            return httpx.Response(402, json=_music_challenge())
++        if n == 2:
++            return httpx.Response(202, json=_music_envelope())
++        return httpx.Response(200, json=_song_row("failed", PLACEHOLDER))
++
++    result = _client(handler).create_music(prompt="doomed")
++
++    assert result["status"] == "failed"
++    assert result["modelVersion"] == "failed"
++    assert result["audioUrl"] is None
++
++
++def test_poll_timeout_raises_render_timeout_with_poll_url() -> None:
++    from suede_ai import RenderTimeout
++
++    calls: list[httpx.Request] = []
++
++    def handler(request: httpx.Request) -> httpx.Response:
++        calls.append(request)
++        n = len(calls)
++        if n == 1:
++            return httpx.Response(402, json=_music_challenge())
++        if n == 2:
++            return httpx.Response(202, json=_music_envelope())
++        return httpx.Response(200, json=_song_row("pending", PLACEHOLDER))
++
++    with pytest.raises(RenderTimeout) as excinfo:
++        _client(handler, poll_timeout=0).create_music(prompt="slow")
++
++    assert excinfo.value.poll_url == SONG_POLL_URL
++    assert excinfo.value.last_status == "pending"
++
++
++def test_idempotency_key_is_reused_across_challenge_and_paid_retry() -> None:
++    keys: list[str] = []
++
++    def handler(request: httpx.Request) -> httpx.Response:
++        keys.append(request.headers["X-Idempotency-Key"])
++        if len(keys) == 1:
++            return httpx.Response(402, json=_music_challenge())
++        return httpx.Response(202, json=_music_envelope())
++
++    _client(handler).create_music(prompt="once", wait=False, idempotency_key="purchase-42")
++
++    assert keys == ["purchase-42", "purchase-42"]
++
++
++def test_agent_image_polls_job_until_completed() -> None:
++    poll_url = "https://app.suedeai.ai/agent/image/image-job-001"
++    calls: list[httpx.Request] = []
++
++    def handler(request: httpx.Request) -> httpx.Response:
++        calls.append(request)
++        n = len(calls)
++        if n == 1:
++            assert request.url.path == "/agent/image"
++            assert json.loads(request.content) == {
++                "prompt": "cover",
++                "aspectRatio": "1:1",
++                "outputFormat": "png",
++            }
++            return httpx.Response(
++                402, json={**_music_challenge(), "accepts": [_accept_entry(amount="150000")]}
++            )
++        if n == 2:
++            return httpx.Response(
++                202,
++                json={
++                    "jobId": "image-job-001",
++                    "status": "queued",
++                    "provider": "suede",
++                    "pollUrl": poll_url,
++                },
++            )
++        assert str(request.url) == poll_url
++        return httpx.Response(
++            200,
++            json={
++                "jobId": "image-job-001",
++                "status": "completed",
++                "provider": "suede",
++                "pollUrl": None,
++                "imageUrl": "https://cdn.suedeai.ai/image/cover.png",
++            },
++        )
++
++    result = _client(handler).agent_image(prompt="cover", aspect_ratio="1:1", output_format="png")
++
++    assert result["status"] == "completed"
++    assert result["imageUrl"] == "https://cdn.suedeai.ai/image/cover.png"
++    assert len(calls) == 3
+ 
+ 
+ def test_request_raises_after_max_retries() -> None:
+     def handler(request: httpx.Request) -> httpx.Response:
+         return httpx.Response(402, json={"accepts": [_accept_entry()]})
+ 
+-    transport = httpx.MockTransport(handler)
+-    http = httpx.Client(transport=transport, base_url="https://app.suedeai.ai")
+-    client = SuedeClient(
+-        wallet_private_key=TEST_PRIVATE_KEY,
+-        http_client=http,
+-        max_payment_attempts=1,
+-    )
++    client = _client(handler, max_payment_attempts=1)
+ 
+     with pytest.raises(X402Error):
+         client.create_music(prompt="will keep failing")
+@@ -333,24 +578,18 @@ def test_agent_generate_compatibility_wrapper_uses_create_music_route() -> None:
+     def handler(request: httpx.Request) -> httpx.Response:
+         assert request.method == "POST"
+         assert request.url.path == "/create-music"
+-        assert json.loads(request.content) == {
+-            "prompt": "compatibility call",
+-            "durationSeconds": 45,
+-            "style": "ambient",
+-        }
+-        return httpx.Response(200, json={"trackId": "trk_compat"})
+-
+-    transport = httpx.MockTransport(handler)
+-    http = httpx.Client(transport=transport, base_url="https://app.suedeai.ai")
+-    client = SuedeClient(wallet_private_key=TEST_PRIVATE_KEY, http_client=http)
+-
+-    result = client.agent_generate(
+-        prompt="compatibility call",
+-        duration_seconds=45,
+-        style="ambient",
+-    )
++        assert json.loads(request.content) == {"prompt": "compatibility call", "style": "ambient"}
++        return httpx.Response(200, json={"shareUrl": SHARE_URL})
++
++    with pytest.warns(DeprecationWarning):
++        result = _client(handler).agent_generate(
++            prompt="compatibility call",
++            duration_seconds=45,
++            style="ambient",
++        )
+ 
+-    assert result == {"trackId": "trk_compat"}
++    assert result["status"] == "completed"
++    assert result["shareUrl"] == SHARE_URL
+ 
+ 
+ # --------------------------------------------------------------------------- coverage of method surface
+-- 
+2.43.0
+
