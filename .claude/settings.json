@@ -9,5 +9,6 @@
   },
   "enabledPlugins": {
     "suede-skills@suede": true
-  }
+  },
+  "includeCoAuthoredBy": false
 }
