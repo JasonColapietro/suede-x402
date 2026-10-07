@@ -5,8 +5,6 @@ description: "Three pay-per-call media APIs over x402: music for $0.50, video fo
 permalink: /
 ---
 
-# Suede x402 Media API
-
 Suede exposes three public, machine-payable media products. Each route quotes its current price in an HTTP `402 Payment Required` response and settles in USDC on Base.
 
 ## Current public inventory
