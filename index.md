@@ -1,6 +1,6 @@
 ---
 layout: default
-title: "Suede x402 Media API: Music, Video, and Image Generation"
+title: "Suede x402 Media API: Pay-Per-Call Music, Video and Image"
 description: "Three pay-per-call media APIs over x402: music for $0.50, video for $4.99, and image for $0.15. USDC on Base, no API key."
 permalink: /
 ---
@@ -317,7 +317,9 @@ Use the [well-known discovery document](https://app.suedeai.ai/.well-known/x402.
 {
   "@context": "https://schema.org",
   "@type": "WebAPI",
+  "@id": "https://x402.suedeai.ai/#webapi",
   "name": "Suede x402 Media API",
+  "url": "https://x402.suedeai.ai/",
   "description": "Three pay-per-call x402 media products: full-length music generation for $0.50, video generation for $4.99, and image generation for $0.15.",
   "documentation": [
     "https://app.suedeai.ai/developers",
@@ -327,6 +329,9 @@ Use the [well-known discovery document](https://app.suedeai.ai/.well-known/x402.
     "@type": "Organization",
     "name": "Suede Labs",
     "url": "https://suedeai.ai"
+  },
+  "publisher": {
+    "@id": "https://suedeai.ai/#organization"
   },
   "offers": [
     {

@@ -5,8 +5,12 @@ lang: en
 theme: jekyll-theme-primer
 markdown: kramdown
 
+# Share card for og:image and twitter:image. The head tags, title and JSON-LD
+# are written by hand in _layouts/default.html rather than by jekyll-seo-tag.
+social_image: /assets/x402-social-card.png
+social_image_alt: "Suede x402 Media API: pay-per-call endpoints POST /create-music, POST /agent/video and POST /agent/image, quoted over HTTP 402 and settled in USDC on Base."
+
 plugins:
-  - jekyll-seo-tag
   - jekyll-sitemap
 
 # README.md is the GitHub repo landing page; index.md is the built Pages

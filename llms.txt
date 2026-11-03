@@ -1,0 +1,25 @@
+# Suede x402 Media API
+
+> Three pay-per-call media APIs over x402: music for $0.50, video for $4.99, and image for $0.15. USDC on Base, no API key. Each route quotes its current price in an HTTP 402 Payment Required response; the amount in the live challenge is authoritative.
+
+Prices below mirror the live values as of August 22, 2026. Sign the quote returned by the route you call, not a value copied from this file.
+
+## Endpoints
+
+- `POST https://app.suedeai.ai/create-music`: Full-length song generation. $0.50 (500000 atomic USDC). A paid call answers 202 with a `songId` and `pollUrl`; poll `GET /api/songs/{songId}` until `model_version` leaves `pending`.
+- `POST https://app.suedeai.ai/agent/video`: Short-form video generation, an 8-second 720p clip with native audio. $4.99 (4990000 atomic USDC). A paid call answers 202 with a `jobId` and `pollUrl`; poll `GET /agent/video/{jobId}` until `status` is `completed` and `videoUrl` is set.
+- `POST https://app.suedeai.ai/agent/image`: Still-image generation. $0.15 (150000 atomic USDC). A paid call answers 202 with a `jobId` and `pollUrl`; poll `GET /agent/image/{jobId}` until `status` is `completed` and `imageUrl` is set.
+
+Payment: USDC on Base (contract `0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913`). Send the request unpaid, read the 402 terms, sign an x402 v2 payload, and retry with the `PAYMENT-SIGNATURE` header. Polling never costs a second payment. Reuse one `X-Idempotency-Key` across retries of the same purchase to avoid paying twice.
+
+## Docs
+
+- [Suede x402 Media API reference](https://x402.suedeai.ai/): Full guide to quotes, payment, asynchronous execution, polling and idempotency.
+- [Developer documentation](https://app.suedeai.ai/developers): The `docs` link carried by every 402 challenge and the `docsUrl` in the discovery document.
+- [Discovery document](https://app.suedeai.ai/.well-known/x402.json): Canonical public inventory (`provider`, `seller`, `marketplace` and the three `resources`).
+- [Discovery document, extensionless alias](https://app.suedeai.ai/.well-known/x402): Byte-identical to the `.json` document.
+- [OpenAPI 3.1 description](https://app.suedeai.ai/openapi.json): The three paid `POST` routes and the three unpriced `GET` poll routes.
+
+## Publisher
+
+- [Suede AI](https://suedeai.ai)
