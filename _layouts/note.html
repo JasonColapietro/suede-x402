@@ -6,6 +6,8 @@ layout: default
   the same source renders this page and the plain-text llms-full.txt.
   Front matter: title (<title>, 50-60 chars), headline (h1 and JSON-LD),
   description, slug, date_published, last_modified_at, og_type: article.
+  Optional extra_place adds a Place to spatialCoverage when it is not
+  already one of the three defaults.
 {%- endcomment -%}
 {%- assign canonical = page.url | absolute_url -%}
 {%- capture note_body -%}{% include notes/{{ page.slug }}.md %}{%- endcapture -%}
@@ -26,7 +28,7 @@ layout: default
 
 <script type="application/ld+json">
 {"@context":"https://schema.org","@graph":[
-{"@type":"BlogPosting","@id":{{ canonical | append: "#article" | jsonify }},"headline":{{ page.headline | jsonify }},"description":{{ page.description | jsonify }},"url":{{ canonical | jsonify }},"mainEntityOfPage":{"@id":{{ canonical | jsonify }}},"isPartOf":{"@id":{{ "/notes/" | absolute_url | append: "#blog" | jsonify }}},"datePublished":{{ page.date_published | jsonify }},"dateModified":{{ page.last_modified_at | date: "%Y-%m-%d" | jsonify }},"inLanguage":"en","wordCount":{{ note_body | strip_html | number_of_words }},"image":{{ site.social_image | absolute_url | jsonify }},"author":{"@id":"https://suedeai.ai/founder#person"},"publisher":{"@id":"https://suedeai.ai/#organization"},"about":[{"@type":"Thing","name":"x402 payment protocol"},{"@id":"https://x402.suedeai.ai/#webapi"}],"spatialCoverage":[{"@type":"Place","name":"West Palm Beach, Florida"},{"@type":"Place","name":"Jupiter, Florida"},{"@type":"AdministrativeArea","name":"Palm Beach County, Florida"}]},
+{"@type":"BlogPosting","@id":{{ canonical | append: "#article" | jsonify }},"headline":{{ page.headline | jsonify }},"description":{{ page.description | jsonify }},"url":{{ canonical | jsonify }},"mainEntityOfPage":{"@id":{{ canonical | jsonify }}},"isPartOf":{"@id":{{ "/notes/" | absolute_url | append: "#blog" | jsonify }}},"datePublished":{{ page.date_published | jsonify }},"dateModified":{{ page.last_modified_at | date: "%Y-%m-%d" | jsonify }},"inLanguage":"en","wordCount":{{ note_body | strip_html | number_of_words }},"image":{{ site.social_image | absolute_url | jsonify }},"author":{"@id":"https://suedeai.ai/founder#person"},"publisher":{"@id":"https://suedeai.ai/#organization"},"about":[{"@type":"Thing","name":"x402 payment protocol"},{"@id":"https://x402.suedeai.ai/#webapi"}],"spatialCoverage":[{"@type":"Place","name":"West Palm Beach, Florida"},{"@type":"Place","name":"Jupiter, Florida"},{"@type":"AdministrativeArea","name":"Palm Beach County, Florida"}{% if page.extra_place and page.extra_place != "West Palm Beach, Florida" and page.extra_place != "Jupiter, Florida" %},{"@type":"Place","name":{{ page.extra_place | jsonify }}}{% endif %}]},
 {"@type":"WebPage","@id":{{ canonical | jsonify }},"url":{{ canonical | jsonify }},"name":{{ page.title | jsonify }},"isPartOf":{"@id":{{ "/" | absolute_url | append: "#website" | jsonify }}},"breadcrumb":{"@id":{{ canonical | append: "#breadcrumb" | jsonify }}}},
 {"@type":"BreadcrumbList","@id":{{ canonical | append: "#breadcrumb" | jsonify }},"itemListElement":[{"@type":"ListItem","position":1,"name":"Suede x402 Media API","item":{{ "/" | absolute_url | jsonify }}},{"@type":"ListItem","position":2,"name":"Notes","item":{{ "/notes/" | absolute_url | jsonify }}},{"@type":"ListItem","position":3,"name":{{ page.headline | jsonify }},"item":{{ canonical | jsonify }}}]}
 ]}
