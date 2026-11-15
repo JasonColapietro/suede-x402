@@ -1,0 +1,33 @@
+---
+layout: default
+---
+{%- comment -%}
+  Article layout for /notes/. The body lives in _includes/notes/<slug>.md so
+  the same source renders this page and the plain-text llms-full.txt.
+  Front matter: title (<title>, 50-60 chars), headline (h1 and JSON-LD),
+  description, slug, date_published, last_modified_at, og_type: article.
+{%- endcomment -%}
+{%- assign canonical = page.url | absolute_url -%}
+{%- capture note_body -%}{% include notes/{{ page.slug }}.md %}{%- endcapture -%}
+<nav class="text-small mb-3" aria-label="Breadcrumb">
+  <a href="{{ "/" | relative_url }}">x402 Media API</a> &rsaquo;
+  <a href="{{ "/notes/" | relative_url }}">Notes</a> &rsaquo;
+  <span aria-current="page">{{ page.headline | escape }}</span>
+</nav>
+
+<article>
+<h1>{{ page.headline | escape }}</h1>
+<p class="text-gray text-small">By <a href="https://suedeai.ai/founder">Jason Colapietro</a>, Founder and CEO, Suede AI &middot; West Palm Beach, Florida &middot; <time datetime="{{ page.date_published }}">{{ page.date_published | date: "%B %-d, %Y" }}</time></p>
+
+{{ note_body | markdownify }}
+</article>
+
+<p class="mt-4"><a href="{{ "/notes/" | relative_url }}">&larr; All Suede x402 notes</a></p>
+
+<script type="application/ld+json">
+{"@context":"https://schema.org","@graph":[
+{"@type":"BlogPosting","@id":{{ canonical | append: "#article" | jsonify }},"headline":{{ page.headline | jsonify }},"description":{{ page.description | jsonify }},"url":{{ canonical | jsonify }},"mainEntityOfPage":{"@id":{{ canonical | jsonify }}},"isPartOf":{"@id":{{ "/notes/" | absolute_url | append: "#blog" | jsonify }}},"datePublished":{{ page.date_published | jsonify }},"dateModified":{{ page.last_modified_at | date: "%Y-%m-%d" | jsonify }},"inLanguage":"en","wordCount":{{ note_body | strip_html | number_of_words }},"image":{{ site.social_image | absolute_url | jsonify }},"author":{"@id":"https://suedeai.ai/founder#person"},"publisher":{"@id":"https://suedeai.ai/#organization"},"about":[{"@type":"Thing","name":"x402 payment protocol"},{"@id":"https://x402.suedeai.ai/#webapi"}],"spatialCoverage":[{"@type":"Place","name":"West Palm Beach, Florida"},{"@type":"Place","name":"Jupiter, Florida"},{"@type":"AdministrativeArea","name":"Palm Beach County, Florida"}]},
+{"@type":"WebPage","@id":{{ canonical | jsonify }},"url":{{ canonical | jsonify }},"name":{{ page.title | jsonify }},"isPartOf":{"@id":{{ "/" | absolute_url | append: "#website" | jsonify }}},"breadcrumb":{"@id":{{ canonical | append: "#breadcrumb" | jsonify }}}},
+{"@type":"BreadcrumbList","@id":{{ canonical | append: "#breadcrumb" | jsonify }},"itemListElement":[{"@type":"ListItem","position":1,"name":"Suede x402 Media API","item":{{ "/" | absolute_url | jsonify }}},{"@type":"ListItem","position":2,"name":"Notes","item":{{ "/notes/" | absolute_url | jsonify }}},{"@type":"ListItem","position":3,"name":{{ page.headline | jsonify }},"item":{{ canonical | jsonify }}}]}
+]}
+</script>

@@ -20,6 +20,15 @@ Payment: USDC on Base (contract `0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913`). S
 - [Discovery document, extensionless alias](https://app.suedeai.ai/.well-known/x402): Byte-identical to the `.json` document.
 - [OpenAPI 3.1 description](https://app.suedeai.ai/openapi.json): The three paid `POST` routes and the three unpriced `GET` poll routes.
 
+## Notes
+
+- [Suede x402 notes](https://x402.suedeai.ai/notes/): Articles on x402 agent payments from Suede AI in West Palm Beach, Florida, by founder Jason Colapietro. Full text in [llms-full.txt](https://x402.suedeai.ai/llms-full.txt).
+- [x402 Explained for South Florida Businesses: Letting AI Agents Pay for Services](https://x402.suedeai.ai/notes/x402-for-south-florida-businesses/): The four-step HTTP 402 flow in plain terms, which local businesses fit early, and the tradeoffs of stablecoin settlement.
+- [How Suede AI Uses x402 in Its Agent Platform, From a West Palm Beach Engineer's View](https://x402.suedeai.ai/notes/how-suede-ai-uses-x402/): Three paid routes, discovery before payment, asynchronous 202 renders, idempotent retries and the documented traps.
+- [Agent Commerce and Trust: Jason Colapietro's Proof as Infrastructure Ideas Applied to Payments](https://x402.suedeai.ai/notes/agent-commerce-proof-as-infrastructure/): What an agent should verify before it pays, and how published evidence turns seller claims into receipts.
+
 ## Publisher
 
-- [Suede AI](https://suedeai.ai)
+- [Suede AI](https://suedeai.ai): Agentic platform company founded in 2024 by Jason Colapietro in West Palm Beach, Florida.
+- [Jason Colapietro, Founder and CEO](https://suedeai.ai/founder)
+- [Suede AI's West Palm Beach SEO, GEO and web practice](https://suedeai.agency/)

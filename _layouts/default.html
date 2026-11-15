@@ -17,7 +17,12 @@
     <title>{{ seo_title | escape }}</title>
     <meta name="description" content="{{ seo_description | escape }}">
     <link rel="canonical" href="{{ seo_url }}">
-    <meta property="og:type" content="website">
+    <meta property="og:type" content="{{ page.og_type | default: "website" }}">
+    {%- if page.og_type == "article" %}
+    <meta property="article:published_time" content="{{ page.date_published }}">
+    <meta property="article:modified_time" content="{{ page.last_modified_at | date: "%Y-%m-%d" }}">
+    <meta property="article:author" content="https://suedeai.ai/founder">
+    {%- endif %}
     <meta property="og:site_name" content="{{ site.title | escape }}">
     <meta property="og:locale" content="en">
     <meta property="og:title" content="{{ seo_title | escape }}">
@@ -47,10 +52,19 @@
         page here opens with its own h1, so that header is omitted to keep one.
       {%- endcomment -%}
 
+      <nav class="site-nav mb-4 text-small" aria-label="Site">
+        <a href="{{ "/" | relative_url }}"{% if page.url == "/" %} aria-current="page"{% endif %}>x402 Media API</a>
+        &middot; <a href="{{ "/notes/" | relative_url }}"{% if page.url contains "/notes/" %} aria-current="page"{% endif %}>Notes</a>
+        &middot; <a href="https://app.suedeai.ai/developers">Developer docs</a>
+      </nav>
+
       {{ content }}
 
+      {% include built-by.html %}
+
       <div class="footer border-top border-gray-light mt-5 pt-3 text-gray">
-        <a href="https://suedeai.ai/privacy">Privacy</a>
+        <a href="{{ "/notes/" | relative_url }}">Notes</a>
+        &middot; <a href="https://suedeai.ai/privacy">Privacy</a>
         &middot; <a href="https://suedeai.ai/contact">Contact</a>
         {%- if site.github.private != true and site.github.license %}
         &middot; This site is open source. {% github_edit_link "Improve this page" %}.
