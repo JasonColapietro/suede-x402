@@ -1,4 +1,4 @@
-The first paid call most developers make against a Suede route fails in the same way: the payment settles, the response comes back `202`, and their client reports an error because it expected a finished song. That one status code sums up how Suede AI thinks about x402. Payment is the easy part. The hard part is everything an agent has to understand before and after it pays.
+A common first surprise on a paid Suede route goes like this: the payment settles, the response comes back `202`, and their client reports an error because it expected a finished song. That one status code sums up how Suede AI thinks about x402. Payment is the easy part. The hard part is everything an agent has to understand before and after it pays.
 
 This note is Jason Colapietro's account, written from his desk in West Palm Beach, Florida, of how Suede AI runs x402 inside its agent platform and why the public contract on [the Suede x402 reference](/) looks the way it does.
 
