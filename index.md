@@ -313,6 +313,12 @@ The amount in the current 402 challenge. This page mirrors the live values as of
 **Where are the machine-readable schemas?**
 Use the [well-known discovery document](https://app.suedeai.ai/.well-known/x402.json), the [OpenAPI 3.1 description](https://app.suedeai.ai/openapi.json), or the [developer documentation](https://app.suedeai.ai/developers). Each 402 challenge also carries an `outputSchema` for the route you called.
 
+## Related notes
+
+- [How Suede runs x402 across its three paid media routes](/notes/how-suede-ai-uses-x402/)
+- [Pricing an API for agent customers, with a worked per-call example](/notes/pricing-an-api-for-agent-customers/)
+- [Agent payment security: replay, spend limits and receipts](/notes/agent-payment-security-replay-limits-receipts/)
+
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
