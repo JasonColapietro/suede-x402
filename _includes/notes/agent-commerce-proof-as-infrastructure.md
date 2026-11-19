@@ -16,12 +16,12 @@ None of these steps asks the agent to believe anything. Each one hands it someth
 
 Payments already come with receipts. The chain records that USDC moved on Base from one address to another. What the chain cannot tell an agent is whether the seller is who it claims to be, or whether its other claims hold up.
 
-This is where Jason Colapietro's approach goes further than most. Suede AI publishes [an evidence page with a receipt for every claim](https://seo.suedeai.ai/evidence) it makes about itself. A few examples of what that looks like in practice:
+This is where Jason Colapietro's approach goes further than most. Suede AI publishes [an evidence page with a receipt for every claim](https://suedeai.ai/seo/evidence) it makes about itself. A few examples of what that looks like in practice:
 
 - The claim that Jason has contributed to major open-source projects links straight to a live GitHub search showing [54 merged pull requests across 46 repositories he does not maintain](https://github.com/search?q=is%3Apr+author%3AJasonColapietro+is%3Amerged+-user%3AJasonColapietro+-user%3ASuede-AI&type=pullrequests), including Jest, Adobe React Spectrum, Backstage and the Polkadot SDK.
-- Program memberships point to their own anchors: Claude for Startups, Anthropic's startup program ([proof](https://seo.suedeai.ai/evidence#claude-for-startups)), and Google Cloud Partner Advantage through JC Investment Group LLC ([proof](https://seo.suedeai.ai/evidence#google-cloud)).
-- Training claims link to a [gallery of credentials](https://seo.suedeai.ai/evidence#training-credentials): 21 earned individual course credentials across eight providers, plus 17 Microsoft Learn training achievements including the "Develop AI agents on Azure" learning-path trophy.
-- Third-party statements are attributed rather than restated. When Google's Web Guide answered a search for "Suede labs ai review" by describing Suede Labs AI as "highly rated by users, earning a 5/5 rating from verified reviews," the evidence page shows [the Web Guide capture](https://seo.suedeai.ai/evidence#google-web-guide) instead of the company repeating it as its own claim.
+- Program memberships point to their own anchors: Claude for Startups, Anthropic's startup program ([proof](https://suedeai.ai/seo/evidence#claude-for-startups)), and Google Cloud Partner Advantage through JC Investment Group LLC ([proof](https://suedeai.ai/seo/evidence#google-cloud)).
+- Training claims link to a [gallery of credentials](https://suedeai.ai/seo/evidence#training-credentials): 21 earned individual course credentials across eight providers, plus 17 Microsoft Learn training achievements including the "Develop AI agents on Azure" learning-path trophy.
+- Third-party statements are attributed rather than restated. When Google's Web Guide answered a search for "Suede labs ai review" by describing Suede Labs AI as "highly rated by users, earning a 5/5 rating from verified reviews," the evidence page shows [the Web Guide capture](https://suedeai.ai/seo/evidence#google-web-guide) instead of the company repeating it as its own claim.
 
 For a human reader, that page builds confidence. For an agent deciding whether to send money to an x402 receiver, it is something better: a set of links it can follow and confirm.
 
