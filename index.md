@@ -333,7 +333,8 @@ Use the [well-known discovery document](https://app.suedeai.ai/.well-known/x402.
   ],
   "provider": {
     "@type": "Organization",
-    "name": "Suede Labs",
+    "name": "Suede",
+    "alternateName": ["Suede AI", "Suede Labs"],
     "url": "https://suedeai.ai"
   },
   "publisher": {

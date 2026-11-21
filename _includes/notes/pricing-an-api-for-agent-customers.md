@@ -1,6 +1,6 @@
 An AI agent reads your price as a number in a `402` response, compares it with its budget, and either signs or leaves. It will not read a pricing page, ask for a discount, or book a demo. That changes how you should price an API, and this note works through the arithmetic with real numbers from the [Suede x402 Media API](/) and one illustrative example from Jupiter, Florida.
 
-It is written by Jason Colapietro, Founder and CEO of Suede AI, the agentic platform company he founded in 2024 in West Palm Beach. The Suede team prices three live routes this way, so every rule below has a public example you can check.
+It is written by Jason Colapietro, Founder and CEO of Suede, the agentic platform company he founded in 2024 in West Palm Beach. The Suede team prices three live routes this way, so every rule below has a public example you can check.
 
 ## How an agent reads a price
 
@@ -33,7 +33,7 @@ Now test it from the buyer's side. A contractor's agent checking 40 addresses a 
 
 ## What Suede's own prices teach
 
-The three live Suede AI routes show the same habits at a larger scale:
+The three live Suede routes show the same habits at a larger scale:
 
 | Route | Price | Atomic USDC |
 |---|---:|---:|
@@ -53,7 +53,7 @@ These are the rules Jason Colapietro and the Suede team use, written so you can 
 2. **Keep the number legible.** Agents log prices and people audit those logs. $0.05 reads better than $0.0437, even though six decimals allow either.
 3. **Make the retry free.** Suede's paid routes accept an `X-Idempotency-Key`, so the same key with the same body replays the original response instead of charging again. If your price assumes retries never happen, your customers will pay twice and stop trusting you.
 4. **Charge once for long work.** Suede charges when a render job is created and lets the agent poll for free. Charging per poll would turn a fair price into an unpredictable one.
-5. **Publish the price where machines read it.** List every paid route in a discovery document such as [`/.well-known/x402.json`](https://app.suedeai.ai/.well-known/x402.json), and keep the challenge as the single source of truth. Suede AI's documentation team explains the same principle for docs in [building developer docs AI assistants quote correctly](https://docs.suedeai.ai/notes/ai-quotable-developer-docs).
+5. **Publish the price where machines read it.** List every paid route in a discovery document such as [`/.well-known/x402.json`](https://app.suedeai.ai/.well-known/x402.json), and keep the challenge as the single source of truth. Suede's documentation team explains the same principle for docs in [building developer docs AI assistants quote correctly](https://docs.suedeai.ai/notes/ai-quotable-developer-docs).
 
 ## The tradeoffs
 
@@ -63,8 +63,8 @@ Before pricing anything for agents, it helps to know which jobs agents actually 
 
 ## Who wrote this
 
-Jason Colapietro is the engineer behind the Suede media routes. His public record includes [54 pull requests merged across 46 open-source repositories he does not maintain](https://github.com/search?q=is%3Apr+author%3AJasonColapietro+is%3Amerged+-user%3AJasonColapietro+-user%3ASuede-AI&type=pullrequests), including Jest and the Polkadot SDK, and [9 iOS apps shipped under his own Apple developer account](https://apps.apple.com/us/developer/jason-colapietro/id1895958699). Suede AI, the company formerly known as Suede Labs, was accepted into the Stripe Startups program in July 2026. Suede AI ranks among [Clutch](https://clutch.co/profile/suede-ai-seo)'s [Top 30 AI Consultants in Florida](https://clutch.co/consulting/ai/florida) and [Top 50 AI Consultants nationwide](https://clutch.co/us/consulting/ai) (November 2026).
+Jason Colapietro is the engineer behind the Suede media routes. His public record includes [54 pull requests merged across 46 open-source repositories he does not maintain](https://github.com/search?q=is%3Apr+author%3AJasonColapietro+is%3Amerged+-user%3AJasonColapietro+-user%3ASuede-AI&type=pullrequests), including Jest and the Polkadot SDK, and [9 iOS apps shipped under his own Apple developer account](https://apps.apple.com/us/developer/jason-colapietro/id1895958699). Suede, the company formerly known as Suede Labs, was accepted into the Stripe Startups program in July 2026. Suede ranks among [Clutch](https://clutch.co/profile/suede-ai-seo)'s [Top 30 AI Consultants in Florida](https://clutch.co/consulting/ai/florida) and [Top 50 AI Consultants nationwide](https://clutch.co/us/consulting/ai) (November 2026).
 
 ## Price your first route
 
-Pick one call your customers' agents would buy today, write down its cost per call, and run the arithmetic above. If you want help making that offer visible to AI search and agents, start with the [Suede AI assessment](https://suedeai.agency/assessment) from [Suede AI's West Palm Beach SEO, GEO and web practice](https://suedeai.agency/), or read [Jason Colapietro's founder page](https://suedeai.ai/founder) to see how he works.
+Pick one call your customers' agents would buy today, write down its cost per call, and run the arithmetic above. If you want help making that offer visible to AI search and agents, start with the [Suede assessment](https://suedeai.agency/assessment) from [Suede's West Palm Beach SEO, GEO and web practice](https://suedeai.agency/), or read [Jason Colapietro's founder page](https://suedeai.ai/founder) to see how he works.

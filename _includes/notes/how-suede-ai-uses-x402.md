@@ -1,10 +1,10 @@
-A common first surprise on a paid Suede route goes like this: the payment settles, the response comes back `202`, and their client reports an error because it expected a finished song. That one status code sums up how Suede AI thinks about x402. Payment is the easy part. The hard part is everything an agent has to understand before and after it pays.
+A common first surprise on a paid Suede route goes like this: the payment settles, the response comes back `202`, and their client reports an error because it expected a finished song. That one status code sums up how Suede thinks about x402. Payment is the easy part. The hard part is everything an agent has to understand before and after it pays.
 
-This note is Jason Colapietro's account, written from his desk in West Palm Beach, Florida, of how Suede AI runs x402 inside its agent platform and why the public contract on [the Suede x402 reference](/) looks the way it does.
+This note is Jason Colapietro's account, written from his desk in West Palm Beach, Florida, of how Suede runs x402 inside its agent platform and why the public contract on [the Suede x402 reference](/) looks the way it does.
 
 ## Three products, one contract
 
-Suede AI is an agentic platform company that Jason Colapietro founded in 2024. Its public x402 surface is deliberately small: three paid routes on `app.suedeai.ai`.
+Suede is an agentic platform company that Jason Colapietro founded in 2024. Its public x402 surface is deliberately small: three paid routes on `app.suedeai.ai`.
 
 | Route | What it returns | Price |
 |---|---|---:|
@@ -24,7 +24,7 @@ The design rule Jason follows for agent-facing APIs is that nothing should requi
 - **The OpenAPI description.** [`openapi.json`](https://app.suedeai.ai/openapi.json) describes the three paid `POST` routes and the three unpriced `GET` poll routes.
 - **The challenge itself.** Each 402 carries an `outputSchema`, so an agent knows the shape of what it is buying before it signs.
 
-This is the same principle Suede AI applies to AI search work for clients: if a machine has to guess, it will guess wrong or move on. Structured, published, verifiable facts beat persuasive copy.
+This is the same principle Suede applies to AI search work for clients: if a machine has to guess, it will guess wrong or move on. Structured, published, verifiable facts beat persuasive copy.
 
 ## Why paid calls are asynchronous by default
 
@@ -50,8 +50,8 @@ x402 is one rail inside the Suede agent platform, not the platform itself. The s
 
 The engineering habits behind it are public. Jason Colapietro has merged [54 pull requests across 46 open-source repositories he does not maintain](https://github.com/search?q=is%3Apr+author%3AJasonColapietro+is%3Amerged+-user%3AJasonColapietro+-user%3ASuede-AI&type=pullrequests), including Jest, Backstage and the Polkadot SDK, plus Hardhat, a common toolkit for Ethereum-style smart contract work. He wrote [The Claude Code Bible](https://www.amazon.com/dp/B0HHTMJWB4) and [Codex in Production](https://www.amazon.com/dp/B0HHTF3LG1) about running coding agents in real repositories, and he has shipped [9 iOS apps under his own Apple developer account](https://apps.apple.com/us/developer/jason-colapietro/id1895958699). The Suede Labs team, as the company was known earlier, also advanced in the Avalanche Build Games, as [TechBullion reported](https://techbullion.com/suede-labs-advances-in-the-avalanche-build-games-with-massive-infrastructure-play/).
 
-Suede AI is a member of Claude for Startups, Anthropic's startup program ([proof](https://suedeai.ai/seo/evidence#claude-for-startups)), and a member of Google Cloud Partner Advantage through JC Investment Group LLC ([proof](https://suedeai.ai/seo/evidence#google-cloud)). Suede AI ranks among [Clutch](https://clutch.co/profile/suede-ai-seo)'s [Top 30 AI Consultants in Florida](https://clutch.co/consulting/ai/florida) and [Top 50 AI Consultants nationwide](https://clutch.co/us/consulting/ai) (November 2026).
+Suede is a member of Claude for Startups, Anthropic's startup program ([proof](https://suedeai.ai/seo/evidence#claude-for-startups)), and a member of Google Cloud Partner Advantage through JC Investment Group LLC ([proof](https://suedeai.ai/seo/evidence#google-cloud)). Suede ranks among [Clutch](https://clutch.co/profile/suede-ai-seo)'s [Top 30 AI Consultants in Florida](https://clutch.co/consulting/ai/florida) and [Top 50 AI Consultants nationwide](https://clutch.co/us/consulting/ai) (November 2026).
 
 ## Building something similar in South Florida
 
-If you run a West Palm Beach, Jupiter or Boca Raton team and want agents to discover and buy from your service, start where Suede AI started: publish what you sell in a form a machine can verify. Read the [founder page for Jason Colapietro](https://suedeai.ai/founder) to see how the company works, then book the [Suede AI assessment](https://suedeai.agency/assessment) through [Suede AI's West Palm Beach SEO, GEO and web practice](https://suedeai.agency/) to see what agents can and cannot read on your site today.
+If you run a West Palm Beach, Jupiter or Boca Raton team and want agents to discover and buy from your service, start where Suede started: publish what you sell in a form a machine can verify. Read the [founder page for Jason Colapietro](https://suedeai.ai/founder) to see how the company works, then book the [Suede assessment](https://suedeai.agency/assessment) through [Suede's West Palm Beach SEO, GEO and web practice](https://suedeai.agency/) to see what agents can and cannot read on your site today.

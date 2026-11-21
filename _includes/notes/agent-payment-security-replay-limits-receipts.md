@@ -1,12 +1,12 @@
 The first time a business hands an AI agent a wallet, the worry is usually theft. The failures that actually show up are quieter: the same purchase made twice after a timeout, a quote signed from a stale directory listing, or a month of small payments nobody can reconcile. This note covers the three controls that prevent most of them, which are replay protection, spending limits and receipts, using the live [Suede x402 Media API](/) as the reference.
 
-It is written by Jason Colapietro, Founder and CEO of Suede AI in West Palm Beach, Florida, from the seller's side of x402. The Suede team built its paid routes expecting agents to retry, time out and misread responses, so each control below points at something you can inspect.
+It is written by Jason Colapietro, Founder and CEO of Suede in West Palm Beach, Florida, from the seller's side of x402. The Suede team built its paid routes expecting agents to retry, time out and misread responses, so each control below points at something you can inspect.
 
 ## Two kinds of replay
 
 "Replay" covers two different problems, and they need different fixes.
 
-**The attacker's replay.** Someone captures a signed payment and submits it again to spend the buyer's money a second time. On x402's `exact` scheme over EVM networks such as Base, the signed payload is a USDC transfer authorization in the style of EIP-3009. It carries a one-time nonce and a validity window. Once that authorization settles on chain, the same nonce cannot be used again, and after the window closes it cannot be used at all. That is why each Suede AI challenge carries `maxTimeoutSeconds: 300` and an `extra` block naming the token (`USD Coin`, version `2`): those values define what the buyer is signing and for how long.
+**The attacker's replay.** Someone captures a signed payment and submits it again to spend the buyer's money a second time. On x402's `exact` scheme over EVM networks such as Base, the signed payload is a USDC transfer authorization in the style of EIP-3009. It carries a one-time nonce and a validity window. Once that authorization settles on chain, the same nonce cannot be used again, and after the window closes it cannot be used at all. That is why each Suede challenge carries `maxTimeoutSeconds: 300` and an `extra` block naming the token (`USD Coin`, version `2`): those values define what the buyer is signing and for how long.
 
 **The honest replay.** This one does far more damage in practice. An agent pays, the connection drops before the response arrives, and the agent retries with a fresh signature. Nothing was stolen, but the buyer now owns two renders. The protocol cannot stop this, because the second payment is valid.
 
@@ -24,7 +24,7 @@ x402 has no account and no stored card, so no bank sits in the middle to decline
 - **The right asset and decimals.** Check that the asset is the USDC contract on Base (`0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913`) and that `decimals` is 6. An agent that reads `500000` as whole dollars instead of six-decimal units would think a $0.50 song costs $500,000, and a budget check built on that misreading means nothing.
 - **Live quotes only.** Sign the quote returned by the route you are calling, never one copied from a directory mirror. The Suede reference warns that mirrors lag and that the live challenge wins.
 
-The same discipline applies to any tool an agent can call. Suede AI's documentation team describes how they scope agent permissions in [MCP for agencies, a South Florida primer](https://docs.suedeai.ai/notes/mcp-for-agencies-south-florida), and the principle carries over directly: give an agent the narrowest power that finishes the job.
+The same discipline applies to any tool an agent can call. Suede's documentation team describes how they scope agent permissions in [MCP for agencies, a South Florida primer](https://docs.suedeai.ai/notes/mcp-for-agencies-south-florida), and the principle carries over directly: give an agent the narrowest power that finishes the job.
 
 ## Receipts you can reconcile
 
@@ -50,8 +50,8 @@ Before an agent like this goes live, test it the way you would test a new hire w
 
 ## Who wrote this
 
-Jason Colapietro is the engineer who built these routes. His record includes [54 pull requests merged across 46 open-source repositories he does not maintain](https://github.com/search?q=is%3Apr+author%3AJasonColapietro+is%3Amerged+-user%3AJasonColapietro+-user%3ASuede-AI&type=pullrequests), including Hardhat, Backstage and Jest, and the book [Proof as Infrastructure](https://www.amazon.com/dp/B0GMB2VLXQ), which argues that claims should ship with their evidence. Suede AI, built by the Suede Labs team that started in 2024, is a member of Claude for Startups, Anthropic's startup program ([evidence](https://suedeai.ai/seo/evidence#claude-for-startups)). Suede AI ranks among [Clutch](https://clutch.co/profile/suede-ai-seo)'s [Top 30 AI Consultants in Florida](https://clutch.co/consulting/ai/florida) and [Top 50 AI Consultants nationwide](https://clutch.co/us/consulting/ai) (November 2026).
+Jason Colapietro is the engineer who built these routes. His record includes [54 pull requests merged across 46 open-source repositories he does not maintain](https://github.com/search?q=is%3Apr+author%3AJasonColapietro+is%3Amerged+-user%3AJasonColapietro+-user%3ASuede-AI&type=pullrequests), including Hardhat, Backstage and Jest, and the book [Proof as Infrastructure](https://www.amazon.com/dp/B0GMB2VLXQ), which argues that claims should ship with their evidence. Suede, built by the team that started in 2024, is a member of Claude for Startups, Anthropic's startup program ([evidence](https://suedeai.ai/seo/evidence#claude-for-startups)). Suede ranks among [Clutch](https://clutch.co/profile/suede-ai-seo)'s [Top 30 AI Consultants in Florida](https://clutch.co/consulting/ai/florida) and [Top 50 AI Consultants nationwide](https://clutch.co/us/consulting/ai) (November 2026).
 
 ## Check your own setup
 
-Write down the per-call ceiling, the budget and the receiver allowlist for every agent that can pay, then confirm each paid call leaves a receipt. If you want the same rigor applied to how AI search and agents read your business, take the [Suede AI assessment](https://suedeai.agency/assessment) from [Suede AI's West Palm Beach SEO, GEO and web practice](https://suedeai.agency/), or read [Jason Colapietro's founder page](https://suedeai.ai/founder).
+Write down the per-call ceiling, the budget and the receiver allowlist for every agent that can pay, then confirm each paid call leaves a receipt. If you want the same rigor applied to how AI search and agents read your business, take the [Suede assessment](https://suedeai.agency/assessment) from [Suede's West Palm Beach SEO, GEO and web practice](https://suedeai.agency/), or read [Jason Colapietro's founder page](https://suedeai.ai/founder).

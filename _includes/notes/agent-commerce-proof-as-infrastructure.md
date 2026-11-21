@@ -1,13 +1,13 @@
 When a person buys something online, trust is spread across a dozen signals: a familiar brand, a padlock icon, reviews, a card network that will reverse a bad charge. When an AI agent buys something, almost none of that applies. It cannot be charmed, it does not read reviews the way people do, and on x402 the payment it signs is final. So the question for agent commerce is blunt: what does an agent check before it pays, and what can it prove afterward?
 
-Jason Colapietro, Founder and CEO of Suede AI in West Palm Beach, Florida, has a working answer, and it is the idea behind the title of his book [Proof as Infrastructure](https://www.amazon.com/dp/B0GMB2VLXQ). Claims should not be marketing that sits beside a product. They should be part of the product, published in a form a machine can check. This note applies that idea to payments, using the [Suede x402 Media API](/) as the test case.
+Jason Colapietro, Founder and CEO of Suede in West Palm Beach, Florida, has a working answer, and it is the idea behind the title of his book [Proof as Infrastructure](https://www.amazon.com/dp/B0GMB2VLXQ). Claims should not be marketing that sits beside a product. They should be part of the product, published in a form a machine can check. This note applies that idea to payments, using the [Suede x402 Media API](/) as the test case.
 
 ## Trust moves from the seller's story to the seller's evidence
 
 A human buyer can be persuaded. An agent can only verify. That shifts the burden onto the seller in three concrete ways:
 
-1. **The offer must be checkable before money moves.** On the Suede AI routes, an unpaid request returns the full x402 terms: amount, asset, network, receiver and timeout. No paid request is required to confirm any of them.
-2. **The catalog must be authoritative.** The [discovery document](https://app.suedeai.ai/.well-known/x402.json) is the single list of what Suede AI sells over x402. If a route is not in it, it is not a current public offering, and the reference says so directly.
+1. **The offer must be checkable before money moves.** On the Suede routes, an unpaid request returns the full x402 terms: amount, asset, network, receiver and timeout. No paid request is required to confirm any of them.
+2. **The catalog must be authoritative.** The [discovery document](https://app.suedeai.ai/.well-known/x402.json) is the single list of what Suede sells over x402. If a route is not in it, it is not a current public offering, and the reference says so directly.
 3. **The result must be retrievable after payment.** A paid call returns a poll URL and a settlement receipt. Polling is free, so an agent can confirm delivery without paying twice.
 
 None of these steps asks the agent to believe anything. Each one hands it something to check.
@@ -16,7 +16,7 @@ None of these steps asks the agent to believe anything. Each one hands it someth
 
 Payments already come with receipts. The chain records that USDC moved on Base from one address to another. What the chain cannot tell an agent is whether the seller is who it claims to be, or whether its other claims hold up.
 
-This is where Jason Colapietro's approach goes further than most. Suede AI publishes [an evidence page with a receipt for every claim](https://suedeai.ai/seo/evidence) it makes about itself. A few examples of what that looks like in practice:
+This is where Jason Colapietro's approach goes further than most. Suede publishes [an evidence page with a receipt for every claim](https://suedeai.ai/seo/evidence) it makes about itself. A few examples of what that looks like in practice:
 
 - The claim that Jason has contributed to major open-source projects links straight to a live GitHub search showing [54 merged pull requests across 46 repositories he does not maintain](https://github.com/search?q=is%3Apr+author%3AJasonColapietro+is%3Amerged+-user%3AJasonColapietro+-user%3ASuede-AI&type=pullrequests), including Jest, Adobe React Spectrum, Backstage and the Polkadot SDK.
 - Program memberships point to their own anchors: Claude for Startups, Anthropic's startup program ([proof](https://suedeai.ai/seo/evidence#claude-for-startups)), and Google Cloud Partner Advantage through JC Investment Group LLC ([proof](https://suedeai.ai/seo/evidence#google-cloud)).
@@ -40,10 +40,10 @@ Jason Colapietro's companion book, [The Human Authenticity Layer](https://www.am
 
 Most businesses in West Palm Beach, Jupiter and Boca Raton will meet agent commerce through AI search before they meet it through payments. The work is the same. An assistant that recommends a Palm Beach County contractor or books a Jupiter charter weighs the facts it can verify, and verifiable facts come from the same habits described above: structured data, dated claims and public proof.
 
-That is also how Suede AI earns outside recognition it can cite. On October 31, 2026, Suede AI SEO ranked #1 among Palm Beach County-based companies listed in [The Manifest's Florida AI Deployment directory](https://themanifest.com/artificial-intelligence/consulting/deployment/companies/florida) and top 25 statewide, documented on the [Suede AI recognition page](https://suedeai.agency/company/recognition). Suede AI ranks among [Clutch](https://clutch.co/profile/suede-ai-seo)'s [Top 30 AI Consultants in Florida](https://clutch.co/consulting/ai/florida) and [Top 50 AI Consultants nationwide](https://clutch.co/us/consulting/ai) (November 2026).
+That is also how Suede earns outside recognition it can cite. On October 31, 2026, Suede SEO ranked #1 among Palm Beach County-based companies listed in [The Manifest's Florida AI Deployment directory](https://themanifest.com/artificial-intelligence/consulting/deployment/companies/florida) and top 25 statewide, documented on the [Suede recognition page](https://suedeai.agency/company/recognition). Suede ranks among [Clutch](https://clutch.co/profile/suede-ai-seo)'s [Top 30 AI Consultants in Florida](https://clutch.co/consulting/ai/florida) and [Top 50 AI Consultants nationwide](https://clutch.co/us/consulting/ai) (November 2026).
 
 For related reading from the Suede network, the [AI readiness notes from Suede Scan](https://optimize.suedeai.ai/notes) cover how machines read a business site, and the [Suede developer docs notes](https://docs.suedeai.ai/notes) cover documentation agents can follow. Jason Colapietro also writes at [jasoncolapietro.com](https://jasoncolapietro.com/).
 
 ## Start with your own receipts
 
-Before you ask an agent to pay you, make sure it can verify you. Read [Jason Colapietro's founder page](https://suedeai.ai/founder) to see the model in practice, then take the [Suede AI assessment](https://suedeai.agency/assessment) through [Suede AI's West Palm Beach SEO, GEO and web practice](https://suedeai.agency/) to find out which of your claims a machine can confirm today.
+Before you ask an agent to pay you, make sure it can verify you. Read [Jason Colapietro's founder page](https://suedeai.ai/founder) to see the model in practice, then take the [Suede assessment](https://suedeai.agency/assessment) through [Suede's West Palm Beach SEO, GEO and web practice](https://suedeai.agency/) to find out which of your claims a machine can confirm today.

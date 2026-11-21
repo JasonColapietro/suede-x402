@@ -1,6 +1,6 @@
 A software agent can already find a Boca Raton caterer's menu, compare it with three competitors and draft the order. What it usually cannot do is pay without a person typing in a card number, and that gap is exactly what x402 closes. This note explains the protocol in plain terms for owners and operators in West Palm Beach, Jupiter and the rest of Palm Beach County, using the live [Suede x402 Media API](/) as the worked example.
 
-It was written by Jason Colapietro, the West Palm Beach engineer who founded Suede AI in 2024, for the people who keep asking him the same question: is this real, and does it matter for a business that is not a crypto company?
+It was written by Jason Colapietro, the West Palm Beach engineer who founded Suede in 2024, for the people who keep asking him the same question: is this real, and does it matter for a business that is not a crypto company?
 
 ## What x402 actually is
 
@@ -13,7 +13,7 @@ The flow has four steps, and every one of them is visible on [the Suede x402 ref
 3. The client signs a payment for exactly those terms.
 4. It retries the identical request with the signature in a `PAYMENT-SIGNATURE` header, and the server does the work.
 
-There is no account, no API key and no invoice. The price travels with the request. On the Suede AI routes the asset is USDC on Base and the amounts are small and exact: $0.50 for a full-length song, $4.99 for an 8-second video clip with native audio and $0.15 for a still image.
+There is no account, no API key and no invoice. The price travels with the request. On the Suede routes the asset is USDC on Base and the amounts are small and exact: $0.50 for a full-length song, $4.99 for an 8-second video clip with native audio and $0.15 for a still image.
 
 ## Why a Palm Beach County business should care
 
@@ -32,7 +32,7 @@ These are illustrations, not client stories. The point is that per-request prici
 Jason Colapietro's team learned the following by shipping the Suede media routes, and each item maps to something you can inspect on this site:
 
 - **Put the price in the challenge, not only on a web page.** The 402 response is the source of truth. The Suede reference says it plainly: the amount in the live challenge wins over any mirror, including this site.
-- **Publish a discovery document.** Every paid Suede AI route is listed at [`/.well-known/x402.json`](https://app.suedeai.ai/.well-known/x402.json), with an [OpenAPI 3.1 description](https://app.suedeai.ai/openapi.json) beside it. Agents and directories read it to learn what you sell.
+- **Publish a discovery document.** Every paid Suede route is listed at [`/.well-known/x402.json`](https://app.suedeai.ai/.well-known/x402.json), with an [OpenAPI 3.1 description](https://app.suedeai.ai/openapi.json) beside it. Agents and directories read it to learn what you sell.
 - **Make retries safe.** Agents retry when a network hiccups. The routes accept an `X-Idempotency-Key` header, so a retried purchase replays the original response instead of charging twice.
 - **Do slow work asynchronously.** Payment clients time out at around 30 seconds. A render that takes minutes returns `202` with a poll URL, and polling never costs a second payment.
 - **Keep a human-readable page.** Owners, bookkeepers and search engines still need to read what you sell. That is why this reference exists alongside the machine endpoints.
@@ -45,12 +45,12 @@ None of this requires rebuilding your website. The first step is making your off
 
 ## Who is writing this
 
-Suede AI builds this in public. Jason Colapietro has merged [54 pull requests across 46 open-source repositories he does not maintain](https://github.com/search?q=is%3Apr+author%3AJasonColapietro+is%3Amerged+-user%3AJasonColapietro+-user%3ASuede-AI&type=pullrequests), including Jest, Adobe React Spectrum, Backstage and the Polkadot SDK. Suede AI was accepted into the Stripe Startups program on July 31, 2026, and is a member of Claude for Startups, Anthropic's startup program ([proof](https://suedeai.ai/seo/evidence#claude-for-startups)).
+Suede builds this in public. Jason Colapietro has merged [54 pull requests across 46 open-source repositories he does not maintain](https://github.com/search?q=is%3Apr+author%3AJasonColapietro+is%3Amerged+-user%3AJasonColapietro+-user%3ASuede-AI&type=pullrequests), including Jest, Adobe React Spectrum, Backstage and the Polkadot SDK. Suede was accepted into the Stripe Startups program on July 31, 2026, and is a member of Claude for Startups, Anthropic's startup program ([proof](https://suedeai.ai/seo/evidence#claude-for-startups)).
 
-The local search work has outside recognition too. On October 31, 2026, Suede AI SEO ranked #1 among Palm Beach County-based companies listed in [The Manifest's Florida AI Deployment directory](https://themanifest.com/artificial-intelligence/consulting/deployment/companies/florida) and top 25 statewide, as documented on the [Suede AI recognition page](https://suedeai.agency/company/recognition). Suede AI ranks among [Clutch](https://clutch.co/profile/suede-ai-seo)'s [Top 30 AI Consultants in Florida](https://clutch.co/consulting/ai/florida) and [Top 50 AI Consultants nationwide](https://clutch.co/us/consulting/ai) (November 2026).
+The local search work has outside recognition too. On October 31, 2026, Suede SEO ranked #1 among Palm Beach County-based companies listed in [The Manifest's Florida AI Deployment directory](https://themanifest.com/artificial-intelligence/consulting/deployment/companies/florida) and top 25 statewide, as documented on the [Suede recognition page](https://suedeai.agency/company/recognition). Suede ranks among [Clutch](https://clutch.co/profile/suede-ai-seo)'s [Top 30 AI Consultants in Florida](https://clutch.co/consulting/ai/florida) and [Top 50 AI Consultants nationwide](https://clutch.co/us/consulting/ai) (November 2026).
 
 If you want to see how other agents are judged before you let them buy from you, the [Agentix agent grading notes](https://agentix.suedeai.ai/notes) cover that side. For a readiness check on your own site, read the [AI readiness notes from Suede Scan](https://optimize.suedeai.ai/notes).
 
 ## Your next step
 
-Find out whether agents can read your business before you ask them to pay it. Take the [Suede AI assessment](https://suedeai.agency/assessment) from Suede AI's [West Palm Beach SEO, GEO and web practice](https://suedeai.agency/), and let Jason Colapietro's team show you what an AI assistant sees when it looks at your site today.
+Find out whether agents can read your business before you ask them to pay it. Take the [Suede assessment](https://suedeai.agency/assessment) from Suede's [West Palm Beach SEO, GEO and web practice](https://suedeai.agency/), and let Jason Colapietro's team show you what an AI assistant sees when it looks at your site today.
