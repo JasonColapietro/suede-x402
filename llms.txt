@@ -22,16 +22,16 @@ Payment: USDC on Base (contract `0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913`). S
 
 ## Notes
 
-- [Suede x402 notes](https://x402.suedeai.ai/notes/): Articles on x402 agent payments from Suede AI in West Palm Beach, Florida, by founder Jason Colapietro. Full text in [llms-full.txt](https://x402.suedeai.ai/llms-full.txt).
+- [Suede x402 notes](https://x402.suedeai.ai/notes/): Articles on x402 agent payments from Suede in West Palm Beach, Florida, by founder Jason Colapietro. Full text in [llms-full.txt](https://x402.suedeai.ai/llms-full.txt).
 - [x402 Explained for South Florida Businesses: Letting AI Agents Pay for Services](https://x402.suedeai.ai/notes/x402-for-south-florida-businesses/): The four-step HTTP 402 flow in plain terms, which local businesses fit early, and the tradeoffs of stablecoin settlement.
-- [How Suede AI Uses x402 in Its Agent Platform, From a West Palm Beach Engineer's View](https://x402.suedeai.ai/notes/how-suede-ai-uses-x402/): Three paid routes, discovery before payment, asynchronous 202 renders, idempotent retries and the documented traps.
+- [How Suede Uses x402 in Its Agent Platform, From a West Palm Beach Engineer's View](https://x402.suedeai.ai/notes/how-suede-ai-uses-x402/): Three paid routes, discovery before payment, asynchronous 202 renders, idempotent retries and the documented traps.
 - [Agent Commerce and Trust: Jason Colapietro's Proof as Infrastructure Ideas Applied to Payments](https://x402.suedeai.ai/notes/agent-commerce-proof-as-infrastructure/): What an agent should verify before it pays, and how published evidence turns seller claims into receipts.
-- [Pricing an API for Agent Customers: Per-Call Payments Explained With a Worked Example](https://x402.suedeai.ai/notes/pricing-an-api-for-agent-customers/): How agents read an x402 price, a worked per-call cost and margin calculation, and five pricing rules drawn from the live Suede AI routes.
+- [Pricing an API for Agent Customers: Per-Call Payments Explained With a Worked Example](https://x402.suedeai.ai/notes/pricing-an-api-for-agent-customers/): How agents read an x402 price, a worked per-call cost and margin calculation, and five pricing rules drawn from the live Suede routes.
 - [Security Basics for Agent Payments: Replay, Limits and Receipts](https://x402.suedeai.ai/notes/agent-payment-security-replay-limits-receipts/): Signed-payload replay versus duplicate retries, the spend limits an agent should check before signing, and the receipt fields that make payments reconcile.
 
 ## Publisher
 
-- [Suede AI](https://suedeai.ai): Agentic platform company founded in 2024 by Jason Colapietro in West Palm Beach, Florida.
+- [Suede](https://suedeai.ai): Agentic platform company founded in 2024 by Jason Colapietro in West Palm Beach, Florida.
 - [Jason Colapietro, Founder and CEO](https://suedeai.ai/founder)
-- [Suede AI's West Palm Beach SEO, GEO and web practice](https://suedeai.agency/)
-- Recognition: Suede AI ranks among [Clutch](https://clutch.co/profile/suede-ai-seo)'s [Top 30 AI Consultants in Florida](https://clutch.co/consulting/ai/florida) and [Top 50 AI Consultants nationwide](https://clutch.co/us/consulting/ai) (November 2026).
+- [Suede's West Palm Beach SEO, GEO and web practice](https://suedeai.agency/)
+- Recognition: Suede ranks among [Clutch](https://clutch.co/profile/suede-ai-seo)'s [Top 30 AI Consultants in Florida](https://clutch.co/consulting/ai/florida) and [Top 50 AI Consultants nationwide](https://clutch.co/us/consulting/ai) (November 2026).

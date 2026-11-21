@@ -13,7 +13,7 @@ const SITE_DIR = process.env.SITE_DIR || join(ROOT, "_site");
 const ORIGIN = "https://x402.suedeai.ai";
 
 const CLUTCH =
-  "Suede AI ranks among [Clutch](https://clutch.co/profile/suede-ai-seo)'s " +
+  "Suede ranks among [Clutch](https://clutch.co/profile/suede-ai-seo)'s " +
   "[Top 30 AI Consultants in Florida](https://clutch.co/consulting/ai/florida) and " +
   "[Top 50 AI Consultants nationwide](https://clutch.co/us/consulting/ai) (November 2026).";
 
@@ -160,4 +160,29 @@ test("built site: sitemap, notes index, llms-full and JSON-LD", { skip: !built &
     .flatMap((d) => d["@graph"] || [d])
     .find((n) => [].concat(n["@type"]).includes("Blog"));
   assert.equal(blog.blogPost.length, notes.length);
+});
+
+// The company is "Suede" (owner direction, 2026-11-21). "Suede AI" and "Suede
+// Labs" stay only where they are aliases or records of someone else's words.
+const OLD_NAME = [/\bsuede[ \t]+(ai|labs)\b/i, /\bSuede(AI|Labs)\b(?![.\-/@])/];
+const OLD_NAME_ALLOWED = [
+  /alternateName/, // schema aliases that merge the old names into the entity
+  /formerly known as|as the company was known/, // the one alias statement per page
+  /Google's Web Guide answered a search for/, // third-party answer, recorded as given
+  /"serviceName": "Suede AI"|`(providerName|displayName)` \| `Suede (AI|Labs)`/, // live API values mirrored verbatim
+];
+
+test("public copy names the company Suede, not Suede AI or Suede Labs", () => {
+  const walk = (dir) =>
+    readdirSync(join(ROOT, dir), { withFileTypes: true }).flatMap((e) =>
+      e.isDirectory() ? walk(join(dir, e.name)) : /\.(md|html|txt|yml)$/.test(e.name) ? [join(dir, e.name)] : [],
+    );
+  const files = ["index.md", "llms.txt", "llms-full.txt", "README.md", "_config.yml", ...walk("_includes"), ...walk("_layouts"), ...walk("notes")];
+  const hits = [];
+  for (const file of files) {
+    readFileSync(join(ROOT, file), "utf8").split("\n").forEach((line, i) => {
+      if (OLD_NAME.some((re) => re.test(line)) && !OLD_NAME_ALLOWED.some((re) => re.test(line))) hits.push(`${file}:${i + 1}`);
+    });
+  }
+  assert.deepEqual(hits, []);
 });
