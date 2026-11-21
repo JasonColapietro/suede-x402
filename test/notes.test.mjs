@@ -164,7 +164,7 @@ test("built site: sitemap, notes index, llms-full and JSON-LD", { skip: !built &
 
 // The company is "Suede" (owner direction, 2026-11-21). "Suede AI" and "Suede
 // Labs" stay only where they are aliases or records of someone else's words.
-const OLD_NAME = /suede[ _]?ai\b(?![.\-/])|suede[ -]?labs\b(?![.\-/])/i;
+const OLD_NAME = [/\bsuede[ \t]+(ai|labs)\b/i, /\bSuede(AI|Labs)\b(?![.\-/@])/];
 const OLD_NAME_ALLOWED = [
   /alternateName/, // schema aliases that merge the old names into the entity
   /formerly known as|as the company was known/, // the one alias statement per page
@@ -181,7 +181,7 @@ test("public copy names the company Suede, not Suede AI or Suede Labs", () => {
   const hits = [];
   for (const file of files) {
     readFileSync(join(ROOT, file), "utf8").split("\n").forEach((line, i) => {
-      if (OLD_NAME.test(line) && !OLD_NAME_ALLOWED.some((re) => re.test(line))) hits.push(`${file}:${i + 1}`);
+      if (OLD_NAME.some((re) => re.test(line)) && !OLD_NAME_ALLOWED.some((re) => re.test(line))) hits.push(`${file}:${i + 1}`);
     });
   }
   assert.deepEqual(hits, []);
